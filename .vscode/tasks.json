@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Scaffold Next.js App",
+			"type": "shell",
+			"command": "npx create-next-app@latest . --typescript --eslint --tailwind --app --import-alias \"@/*\" --no-src-dir --use-npm --no-git",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		}
+	]
+}

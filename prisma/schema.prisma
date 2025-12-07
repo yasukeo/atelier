@@ -1,0 +1,235 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum PaintingKind {
+  UNIQUE
+  RECREATABLE
+}
+
+enum Orientation {
+  PORTRAIT
+  PAYSAGE
+  CARRE
+  AUTRE
+}
+
+// Models
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         UserRole @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders    Order[]
+  cartItems CartItem[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Artist {
+  id        String   @id @default(cuid())
+  name      String
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  paintings Painting[]
+}
+
+model Style {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  paintings Painting[]
+}
+
+model Technique {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  paintings Painting[]
+}
+
+model Painting {
+  id                String                     @id @default(cuid())
+  title             String
+  description       String?
+  kind              PaintingKind
+  priceMAD          Int                        // price for UNIQUE original (for RECREATABLE use options)
+  widthCm           Int
+  heightCm          Int
+  orientation       Orientation
+  colorTags         Json?                      // MySQL: use JSON instead of Postgres arrays
+  available         Boolean                    @default(true)
+  leadTimeWeeks     String?                    // e.g., "1 à 3 semaines"
+  artistId          String
+  styleId           String?
+  techniqueId       String?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  artist            Artist                     @relation(fields: [artistId], references: [id])
+  style             Style?                      @relation(fields: [styleId], references: [id])
+  technique         Technique?                  @relation(fields: [techniqueId], references: [id])
+  images            PaintingImage[]
+  recreationOptions PaintingRecreationOption[]
+  orderItems        OrderItem[]
+  cartItems         CartItem[]
+
+  @@index([createdAt, id])
+  @@index([priceMAD])
+}
+
+model PaintingImage {
+  id         String   @id @default(cuid())
+  paintingId String
+  url        String
+  alt        String?
+  position   Int      @default(0)
+
+  painting   Painting @relation(fields: [paintingId], references: [id])
+}
+
+model PaintingRecreationOption {
+  id         String   @id @default(cuid())
+  paintingId String
+  widthCm    Int
+  heightCm   Int
+  priceMAD   Int
+
+  painting   Painting @relation(fields: [paintingId], references: [id])
+
+  @@unique([paintingId, widthCm, heightCm])
+}
+
+model DiscountCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  percent   Int      // percent-only discounts
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+}
+
+enum OrderStatus {
+  PENDING_REVIEW
+  IN_PROGRESS
+  READY_FOR_DELIVERY
+  COMPLETED
+  CANCELED
+}
+
+model Order {
+  id             String       @id @default(cuid())
+  customerId     String
+  status         OrderStatus  @default(PENDING_REVIEW)
+  totalMAD       Int
+  shippingFeeMAD Int           @default(0)
+  discountCodeId String?
+  phone          String        // normalized +212... or local format as per rules
+  postalCode     String
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  country        String        @default("MA")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  customer       User          @relation(fields: [customerId], references: [id])
+  discountCode   DiscountCode? @relation(fields: [discountCodeId], references: [id])
+  items          OrderItem[]
+  statusHistory  OrderStatusHistory[]
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  paintingId   String
+  widthCm      Int
+  heightCm     Int
+  unitPriceMAD Int
+  quantity     Int      @default(1)
+
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  painting     Painting @relation(fields: [paintingId], references: [id])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model CartItem {
+  id           String   @id @default(cuid())
+  userId       String?
+  sessionId    String?
+  paintingId   String
+  widthCm      Int?
+  heightCm     Int?
+  unitPriceMAD Int
+  quantity     Int      @default(1)
+  createdAt    DateTime @default(now())
+
+  user         User?    @relation(fields: [userId], references: [id])
+  painting     Painting @relation(fields: [paintingId], references: [id])
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([token])
+  @@index([userId])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String   @db.Text
+  phone     String?
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+}
