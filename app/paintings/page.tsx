@@ -9,7 +9,9 @@ export const revalidate = 60 // cache briefly for public view
 
 export default async function PaintingsGalleryPage({ searchParams }: { searchParams: Record<string,string|undefined> }) {
   const filters = parsePaintingFilters(searchParams)
-  const where: Prisma.PaintingWhereInput = {}
+  const where: Prisma.PaintingWhereInput = {
+    available: true, // Only show available paintings
+  }
   if (filters.artist) where.artistId = filters.artist
   if (filters.style) where.styleId = filters.style
   if (filters.technique) where.techniqueId = filters.technique

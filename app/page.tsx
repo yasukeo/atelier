@@ -18,6 +18,7 @@ export default async function Home() {
 
   // Parallel data fetching
   const paintings = await prisma.painting.findMany({
+    where: { available: true },
     include: { artist: true, images: { orderBy: { position: 'asc' } } },
     orderBy: { createdAt: 'desc' },
     take: 6,

@@ -77,6 +77,17 @@ export async function placeOrderAction(formData: FormData) {
     }
     // Clear user cart
     await tx.cartItem.deleteMany({ where: { userId: user.id } })
+    
+    // Mark UNIQUE paintings as unavailable (they can only be sold once)
+    const orderedPaintingIds = cart.items.map(i => i.paintingId)
+    await tx.painting.updateMany({
+      where: {
+        id: { in: orderedPaintingIds },
+        kind: 'UNIQUE',
+      },
+      data: { available: false },
+    })
+    
     return created
   })
 
