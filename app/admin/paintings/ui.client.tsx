@@ -5,19 +5,20 @@ import { toast } from 'sonner'
 export default function ClientEnhancements({ success, error }: { success: string | null; error: string | null }) {
   useEffect(() => {
     if (success) {
-      const msg = success === 'created' ? 'Painting created' : success === 'updated' ? 'Painting updated' : success === 'deleted' ? 'Painting deleted' : success === 'image-removed' ? 'Image removed' : 'Success'
+      const msg = success === 'created' ? 'Œuvre créée' : success === 'updated' ? 'Œuvre mise à jour' : success === 'deleted' ? 'Œuvre supprimée' : success === 'image-removed' ? 'Image supprimée' : 'Succès'
       toast.success(msg)
     }
   }, [success])
   useEffect(() => {
     if (error) {
       toast.error(
-        error === 'invalid' ? 'Invalid data' :
-        error === 'unknown' ? 'Unexpected error' :
-        error === 'linked' ? 'Cannot delete (linked)' :
-        error === 'media' ? 'Media config missing' :
+        error === 'invalid' ? 'Données invalides' :
+        error === 'unknown' ? 'Erreur inattendue' :
+        error === 'linked' ? 'Impossible de supprimer (liée à une commande)' :
+        error === 'has-orders' ? 'Impossible de supprimer : cette œuvre a été commandée' :
+        error === 'media' ? 'Configuration média manquante' :
         error === 'file-too-large' ? 'Image > 5MB' :
-        error === 'payload-too-large' ? 'Total images size trop grande' :
+        error === 'payload-too-large' ? 'Taille totale des images trop grande' :
         error
       )
     }

@@ -75,10 +75,11 @@ export async function createPainting(formData: FormData) {
       }
     }
     revalidatePath('/admin/paintings')
-    redirect('/admin/paintings?success=created')
-  } catch {
+  } catch (e) {
+    console.error('createPainting error:', e)
     redirect('/admin/paintings?error=unknown')
   }
+  redirect('/admin/paintings?success=created')
 }
 
 export async function updatePainting(formData: FormData) {
@@ -128,23 +129,37 @@ export async function updatePainting(formData: FormData) {
       }
     }
     revalidatePath('/admin/paintings')
-    redirect('/admin/paintings?success=updated')
-  } catch {
+  } catch (e) {
+    console.error('updatePainting error:', e)
     redirect('/admin/paintings?error=unknown')
   }
+  redirect('/admin/paintings?success=updated')
 }
 
 export async function deletePainting(formData: FormData) {
   await requireAdmin()
   const id = String(formData.get('id') || '')
   if (!id) redirect('/admin/paintings?error=invalid')
+  
+  // Check if painting has been ordered (we can't delete those to preserve order history)
+  const orderItemCount = await prisma.orderItem.count({ where: { paintingId: id } })
+  if (orderItemCount > 0) {
+    redirect('/admin/paintings?error=has-orders')
+  }
+  
   try {
+    // Delete related cart items first
+    await prisma.cartItem.deleteMany({ where: { paintingId: id } })
+    // Delete related images
+    await prisma.paintingImage.deleteMany({ where: { paintingId: id } })
+    // Now delete the painting
     await prisma.painting.delete({ where: { id } })
     revalidatePath('/admin/paintings')
-    redirect('/admin/paintings?success=deleted')
-  } catch {
+  } catch (e) {
+    console.error('deletePainting error:', e)
     redirect('/admin/paintings?error=linked')
   }
+  redirect('/admin/paintings?success=deleted')
 }
 
 export async function deletePaintingImage(formData: FormData) {
