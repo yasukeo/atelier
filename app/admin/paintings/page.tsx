@@ -66,18 +66,26 @@ export default async function AdminPaintingsPage({ searchParams }: { searchParam
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="available" defaultChecked /> Available</label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="available" defaultChecked /> Disponible (visible dans la galerie)</label>
           </div>
           <div>
             <MultiImageDrop name="images" />
           </div>
-          <Button type="submit" className="w-fit">Add</Button>
+          <Button type="submit" className="w-fit">Ajouter</Button>
         </form>
       </section>
       <ul className="space-y-2">
         {paintings.map(p => (
           <li key={p.id} className="border rounded p-3">
-            <div className="font-medium">{p.title}</div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{p.title}</span>
+              {p.available ? (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Visible</span>
+              ) : (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">Masqué</span>
+              )}
+              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{p.kind === 'UNIQUE' ? 'Unique' : 'Recréable'}</span>
+            </div>
             <div className="text-sm text-muted-foreground">
               {p.artist?.name ?? '—'} • {p.style?.name ?? '—'} • {p.technique?.name ?? '—'} • {p.widthCm}×{p.heightCm}cm • {p.priceMAD} MAD
             </div>
@@ -137,16 +145,16 @@ export default async function AdminPaintingsPage({ searchParams }: { searchParam
                   </select>
                 </div>
                 <label className="flex items-center gap-2 text-sm sm:col-span-3">
-                  <input type="checkbox" name="available" defaultChecked={p.available} /> Available
+                  <input type="checkbox" name="available" defaultChecked={p.available} /> Disponible (visible dans la galerie)
                 </label>
                 <div className="sm:col-span-3">
                   <MultiImageDrop name="images" />
                 </div>
-                <Button type="submit" variant="secondary" className="w-fit sm:col-span-3">Save</Button>
+                <Button type="submit" variant="secondary" className="w-fit sm:col-span-3">Enregistrer</Button>
               </form>
               <form action={deletePainting} className="sm:col-span-1 self-start">
                 <input type="hidden" name="id" value={p.id} />
-                <Button type="submit" variant="destructive">Delete</Button>
+                <Button type="submit" variant="destructive">Supprimer</Button>
               </form>
             </div>
           </li>
