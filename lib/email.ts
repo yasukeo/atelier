@@ -49,7 +49,7 @@ export async function sendOrderConfirmation(to: string, data: OrderEmailData) {
       <div style="max-width: 600px; margin: 0 auto; background-color: #FDFCFA; border-radius: 12px; overflow: hidden; border: 1px solid #DCD9CC;">
         <!-- Header -->
         <div style="background-color: #E9E7DB; padding: 24px; text-align: center;">
-          <h1 style="margin: 0; color: #6B2D2D; font-size: 24px;">Elwarcha | الورشة</h1>
+          <img src="${SITE_URL}/logos/logo-text.png" alt="Elwarcha" style="height: 50px; width: auto;" />
         </div>
         
         <!-- Content -->
@@ -153,7 +153,7 @@ export async function sendPasswordResetEmail(to: string, token: string, userName
       <div style="max-width: 600px; margin: 0 auto; background-color: #FDFCFA; border-radius: 12px; overflow: hidden; border: 1px solid #DCD9CC;">
         <!-- Header -->
         <div style="background-color: #E9E7DB; padding: 24px; text-align: center;">
-          <h1 style="margin: 0; color: #6B2D2D; font-size: 24px;">Elwarcha | الورشة</h1>
+          <img src="${SITE_URL}/logos/logo-text.png" alt="Elwarcha" style="height: 50px; width: auto;" />
         </div>
         
         <!-- Content -->
@@ -257,7 +257,7 @@ export async function sendOrderStatusUpdate(
       <div style="max-width: 600px; margin: 0 auto; background-color: #FDFCFA; border-radius: 12px; overflow: hidden; border: 1px solid #DCD9CC;">
         <!-- Header -->
         <div style="background-color: #E9E7DB; padding: 24px; text-align: center;">
-          <h1 style="margin: 0; color: #6B2D2D; font-size: 24px;">Elwarcha | الورشة</h1>
+          <img src="${SITE_URL}/logos/logo-text.png" alt="Elwarcha" style="height: 50px; width: auto;" />
         </div>
         
         <!-- Content -->
@@ -303,6 +303,75 @@ export async function sendOrderStatusUpdate(
 
   if (error) {
     console.error('Failed to send order status update email:', error)
+    throw error
+  }
+}
+
+// ==================== Contact Notification ====================
+
+interface ContactData {
+  name: string
+  email: string
+  phone?: string
+  subject: string
+  message: string
+}
+
+export async function sendContactNotification(data: ContactData) {
+  const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'contact@elwarcha.com'
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #F7F5F0; margin: 0; padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #FDFCFA; border-radius: 12px; overflow: hidden; border: 1px solid #DCD9CC;">
+        <!-- Header -->
+        <div style="background-color: #E9E7DB; padding: 24px; text-align: center;">
+          <img src="${SITE_URL}/logos/logo-text.png" alt="Elwarcha" style="height: 50px; width: auto;" />
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 32px;">
+          <h2 style="color: #6B2D2D; margin: 0 0 24px;">Nouveau message de contact</h2>
+          
+          <div style="background-color: #F7F5F0; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+            <p style="margin: 0 0 8px;"><strong style="color: #6B2D2D;">Nom:</strong> <span style="color: #2D2A26;">${data.name}</span></p>
+            <p style="margin: 0 0 8px;"><strong style="color: #6B2D2D;">Email:</strong> <a href="mailto:${data.email}" style="color: #6B2D2D;">${data.email}</a></p>
+            ${data.phone ? `<p style="margin: 0 0 8px;"><strong style="color: #6B2D2D;">Téléphone:</strong> <span style="color: #2D2A26;">${data.phone}</span></p>` : ''}
+            <p style="margin: 0;"><strong style="color: #6B2D2D;">Sujet:</strong> <span style="color: #2D2A26;">${data.subject}</span></p>
+          </div>
+          
+          <div style="background-color: #FDFCFA; padding: 16px; border: 1px solid #E9E7DB; border-radius: 8px;">
+            <p style="color: #6B2D2D; font-weight: 600; margin: 0 0 8px;">Message:</p>
+            <p style="color: #2D2A26; margin: 0; white-space: pre-wrap;">${data.message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #E9E7DB; padding: 24px; text-align: center;">
+          <p style="color: #8B7355; font-size: 12px; margin: 0;">
+            Ce message a été envoyé via le formulaire de contact du site.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const { error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: CONTACT_EMAIL,
+    replyTo: data.email,
+    subject: `[Contact] ${data.subject}`,
+    html,
+  })
+
+  if (error) {
+    console.error('Failed to send contact notification email:', error)
     throw error
   }
 }

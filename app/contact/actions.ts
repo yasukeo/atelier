@@ -1,6 +1,6 @@
 "use server"
 import { z } from 'zod'
-import { getTransport } from '@/lib/email'
+import { sendContactNotification } from '@/lib/email'
 import { prisma } from '@/lib/db'
 
 const contactSchema = z.object({
@@ -48,19 +48,12 @@ export async function submitContact(formData: FormData) {
 
     // Notify via email (best-effort; failure doesn't remove stored message)
     try {
-      const transporter = getTransport()
-      const adminEmail = process.env.CONTACT_TARGET || process.env.SMTP_FROM || 'contact@example.com'
-      const bodyHtml = `<p><strong>Nom:</strong> ${name}</p>
-<p><strong>Email:</strong> ${email}</p>
-${phone ? `<p><strong>Téléphone:</strong> ${phone}</p>` : ''}
-<p><strong>Sujet:</strong> ${subject}</p>
-<hr/><pre style="white-space:pre-wrap;font-family:inherit">${message.replace(/[<>]/g, c => c === '<' ? '&lt;' : '&gt;')}</pre>`
-      await transporter.sendMail({
-        from: adminEmail,
-        to: adminEmail,
-        subject: `[Contact] ${subject}`,
-        html: bodyHtml,
-        replyTo: email,
+      await sendContactNotification({
+        name,
+        email,
+        phone: phone || undefined,
+        subject,
+        message,
       })
     } catch (mailErr) {
       if (process.env.NODE_ENV !== 'production') console.error('contact email send failed (message stored)', mailErr)

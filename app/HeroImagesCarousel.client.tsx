@@ -32,30 +32,32 @@ export function HeroImagesCarousel({ paintings }: Props) {
   const visible = [index, (index + 1) % imgs.length, (index + 2) % imgs.length]
 
   return (
-    <div className="flex-1 grid grid-cols-3 gap-3 max-w-lg self-start lg:self-stretch relative">
-      {visible.map((vid, slot) => {
-        const item = imgs[vid]
-        const img = item.img
-        return (
-          <div
-            key={item.id + '-' + slot}
-            className="relative aspect-[3/4] rounded-xl overflow-hidden shadow ring-1 ring-black/5 bg-muted"
-          >
-            {img ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={img.url}
-                alt={img.alt || item.title}
-                className="absolute inset-0 w-full h-full object-cover animate-fade"
-                style={{ animationDelay: `${slot * 150}ms` }}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-xs text-muted-foreground">—</div>
-            )}
-          </div>
-        )
-      })}
-      <div className="col-span-3 text-xs text-muted-foreground text-center mt-1 absolute -bottom-6 left-0 right-0">Aperçu</div>
+    <div className="flex-1 w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto lg:mx-0 mt-4 lg:mt-0">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 relative">
+        {visible.map((vid, slot) => {
+          const item = imgs[vid]
+          const img = item.img
+          return (
+            <div
+              key={item.id + '-' + slot}
+              className="relative aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden shadow ring-1 ring-black/5 bg-muted"
+            >
+              {img ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={img.url}
+                  alt={img.alt || item.title}
+                  className="absolute inset-0 w-full h-full object-cover animate-fade"
+                  style={{ animationDelay: `${slot * 150}ms` }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-xs text-muted-foreground">—</div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <p className="text-xs text-[#8B7355] text-center mt-3">Aperçu de nos œuvres</p>
       <style jsx>{`
         @keyframes fadeInHeroImg { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
         .animate-fade { animation: fadeInHeroImg 0.9s ease both; }

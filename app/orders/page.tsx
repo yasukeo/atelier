@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -127,12 +128,14 @@ export default async function OrdersPage() {
                   const displayHeight = item.heightCm || item.painting.heightCm
                   return (
                     <div key={item.id} className="px-6 py-4 flex gap-4">
-                      <div className="w-16 h-16 rounded-lg bg-[#EAE8DE] overflow-hidden flex-shrink-0 border border-[#DCD9CC]">
+                      <div className="w-16 h-16 rounded-lg bg-[#EAE8DE] overflow-hidden flex-shrink-0 border border-[#DCD9CC] relative">
                         {img ? (
-                          <img
+                          <Image
                             src={img.url}
                             alt={item.painting.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="64px"
+                            className="object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-lg text-[#8B7355]">

@@ -81,7 +81,7 @@ export default function AboutPage() {
         <p className="text-sm text-[#8B7355]">Une question, un projet sur mesure ou un partenariat ? Écrivez‑nous.</p>
         <div className="flex flex-wrap gap-4 text-sm">
           <Link href="/contact" className="text-[#6B2D2D] underline underline-offset-4 hover:text-[#5A2525]">Formulaire de contact</Link>
-          <a href="mailto:contact@example.com" className="text-[#6B2D2D] underline underline-offset-4 hover:text-[#5A2525]">contact@example.com</a>
+          <a href="mailto:contact@elwarcha.com" className="text-[#6B2D2D] underline underline-offset-4 hover:text-[#5A2525]">contact@elwarcha.com</a>
         </div>
       </section>
     </div>

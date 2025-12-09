@@ -54,9 +54,13 @@ export function AuthActions({ session, variant = 'bar', showRegister = true, cla
       {isAdmin && (
         <Link href="/admin" className={cn('text-xs font-medium rounded-full h-9 px-4 inline-flex items-center justify-center border border-amber-300/60 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition', variant === 'hero' ? '' : 'order-2')}>Admin</Link>
       )}
-      <span className="text-xs text-muted-foreground hidden md:inline-block">
+      <Link 
+        href="/profile" 
+        className="text-xs text-[#8B7355] hover:text-[#6B2D2D] hidden md:inline-block transition-colors"
+        title="Mon profil"
+      >
         {session.email?.split('@')[0]}
-      </span>
+      </Link>
       <SignOutButton
         label="Se déconnecter"
         className={cn(

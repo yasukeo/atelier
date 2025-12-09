@@ -24,31 +24,40 @@ async function KPISection() {
   const now = new Date()
   const since = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 30)
 
-  const [orders, statusCounts, uniquePaintings, soldUniqueOriginals, topPaintingAgg] = await Promise.all([
+  const [completedOrders, allOrders, statusCounts, uniquePaintings, soldUniqueOriginals, topPaintingAgg] = await Promise.all([
+    // Revenue: only from COMPLETED orders
+    prisma.order.findMany({
+      where: { createdAt: { gte: since }, status: 'COMPLETED' },
+      select: { id: true, totalMAD: true, createdAt: true },
+    }),
+    // Order count: all non-canceled orders
     prisma.order.findMany({
       where: { createdAt: { gte: since }, status: { not: 'CANCELED' } },
-      select: { id: true, totalMAD: true, createdAt: true },
+      select: { id: true, totalMAD: true },
     }),
     prisma.order.groupBy({ by: ['status'], _count: { status: true }, where: { createdAt: { gte: since } } }),
     prisma.painting.count({ where: { kind: 'UNIQUE' } }),
-    prisma.orderItem.count({ where: { painting: { kind: 'UNIQUE' }, order: { status: { not: 'CANCELED' } } } }),
+    prisma.orderItem.count({ where: { painting: { kind: 'UNIQUE' }, order: { status: 'COMPLETED' } } }),
     prisma.orderItem.groupBy({
       by: ['paintingId'],
-      where: { order: { createdAt: { gte: since }, status: { not: 'CANCELED' } } },
+      where: { order: { createdAt: { gte: since }, status: 'COMPLETED' } },
       _sum: { unitPriceMAD: true, quantity: true },
       orderBy: { _sum: { quantity: 'desc' } },
       take: 1,
     }),
   ])
 
-  const revenue = orders.reduce((acc, o) => acc + o.totalMAD, 0)
-  const ordersCount = orders.length
-  const aov = ordersCount ? Math.round(revenue / ordersCount) : 0
+  // Revenue only from completed orders
+  const revenue = completedOrders.reduce((acc, o) => acc + o.totalMAD, 0)
+  const ordersCount = allOrders.length
+  const completedCount = completedOrders.length
+  const aov = completedCount ? Math.round(revenue / completedCount) : 0
   const statusMap = Object.fromEntries(statusCounts.map(s => [s.status, s._count.status])) as Record<string, number>
   const pending = statusMap['PENDING_REVIEW'] || 0
   const inProgress = statusMap['IN_PROGRESS'] || 0
   const completed = statusMap['COMPLETED'] || 0
-  const recreatableOrders = await prisma.orderItem.count({ where: { painting: { kind: 'RECREATABLE' }, order: { status: { not: 'CANCELED' } } } })
+  // Only count items from COMPLETED orders for ratios
+  const recreatableOrders = await prisma.orderItem.count({ where: { painting: { kind: 'RECREATABLE' }, order: { status: 'COMPLETED' } } })
   const recreatableRatio = (recreatableOrders + soldUniqueOriginals) ? (recreatableOrders / (recreatableOrders + soldUniqueOriginals)) : 0
   let topPaintingTitle: string | null = null
   if (topPaintingAgg.length) {

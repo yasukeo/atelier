@@ -14,11 +14,11 @@ export const fr = {
   },
   home: {
     hero: {
-      title: "Atelier d'art contemporain & re-créations sur mesure",
-      description: "Découvrez une sélection de peintures originales et commandez des re-créations personnalisées. Chaque œuvre est réalisée avec soin dans notre atelier local.",
-      ctaGallery: "Voir la galerie",
-      prompt: "Parcourir les nouveautés",
-      previewCaption: "Aperçu de nos œuvres récentes",
+      title: "Elwarcha | الورشة — Peintures artisanales",
+      description: "Tableaux originaux peints à la main au Maroc. Commandez une œuvre unique ou une reproduction personnalisée.",
+      ctaGallery: "Explorer les œuvres",
+      prompt: "Nouveautés",
+      previewCaption: "Aperçu",
       noImage: "Aucune image",
     },
     featured: {
@@ -37,6 +37,11 @@ export const fr = {
         customization: { kicker: "Personnalisation", title: "Formats & adaptations", text: "Adaptez les dimensions ou demandez une variation chromatique. Nous vous conseillons selon votre espace." },
         trust: { kicker: "Confiance", title: "Suivi transparent", text: "Vous serez informé des étapes clés de réalisation et de préparation avant livraison ou retrait." },
       }
+    },
+    advancePayment: {
+      title: "Note sur les avances",
+      text: "Certaines œuvres, notamment les re-créations ou commandes personnalisées, peuvent nécessiter une avance avant le début de la réalisation. Vous serez contacté(e) pour convenir des modalités.",
+      shortText: "Une avance peut être demandée pour certaines œuvres."
     },
     footer: {
       copyright: (year: number) => `© ${year} Elwarcha – Tous droits réservés.`

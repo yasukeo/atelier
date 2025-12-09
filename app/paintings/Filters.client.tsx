@@ -11,13 +11,34 @@ function useDebounce<T>(value: T, ms: number) {
   return v
 }
 
+function FilterIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+    </svg>
+  )
+}
+
+function ChevronIcon({ open, className = "w-4 h-4" }: { open: boolean; className?: string }) {
+  return (
+    <svg className={`${className} transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
+  )
+}
+
 export function Filters({ artists, styles, techniques }: { artists: {id:string; name:string}[]; styles: {id:string; name:string}[]; techniques: {id:string; name:string}[] }) {
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const router = useRouter()
+  const [isOpen, setIsOpen] = useState(false)
 
   const [q, setQ] = useState(searchParams.get('q') || '')
   const debouncedQ = useDebounce(q, 400)
+
+  // Count active filters
+  const filterKeys = ['artist','style','technique','minPrice','maxPrice','minWidth','maxWidth','minHeight','maxHeight','kind','q']
+  const activeFilters = filterKeys.filter(k => searchParams.get(k)).length
 
   const setParam = useCallback((key: string, value: string | undefined) => {
     const sp = new URLSearchParams(searchParams.toString())
@@ -48,34 +69,53 @@ export function Filters({ artists, styles, techniques }: { artists: {id:string; 
 
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-xs font-medium mb-1">Recherche</label>
-        <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Titre, artiste..." />
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="space-y-1">
-          <label className="block text-xs font-medium">Artiste</label>
-          <select className="w-full border rounded h-9 text-sm bg-background" value={current('artist')} onChange={e => setParam('artist', e.target.value || undefined)}>
-            <option value="">Tous</option>
-            {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
+      {/* Mobile Toggle Header */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="lg:hidden w-full flex items-center justify-between py-2 text-sm font-medium text-[#6B2D2D]"
+      >
+        <span className="flex items-center gap-2">
+          <FilterIcon />
+          Filtres
+          {activeFilters > 0 && (
+            <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 text-[10px] font-bold bg-[#6B2D2D] text-white rounded-full">
+              {activeFilters}
+            </span>
+          )}
+        </span>
+        <ChevronIcon open={isOpen} />
+      </button>
+
+      {/* Desktop: always visible, Mobile: collapsible */}
+      <div className={`${isOpen ? 'block' : 'hidden'} lg:block space-y-4`}>
+        <div>
+          <label className="block text-xs font-medium mb-1 text-[#2D2A26]">Recherche</label>
+          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Titre, artiste..." className="h-9 text-sm" />
         </div>
-        <div className="space-y-1">
-          <label className="block text-xs font-medium">Style</label>
-            <select className="w-full border rounded h-9 text-sm bg-background" value={current('style')} onChange={e => setParam('style', e.target.value || undefined)}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-[#2D2A26]">Artiste</label>
+            <select className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('artist')} onChange={e => setParam('artist', e.target.value || undefined)}>
+              <option value="">Tous</option>
+              {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-[#2D2A26]">Style</label>
+            <select className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('style')} onChange={e => setParam('style', e.target.value || undefined)}>
               <option value="">Tous</option>
               {styles.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-        </div>
-        <div className="space-y-1">
-          <label className="block text-xs font-medium">Technique</label>
-            <select className="w-full border rounded h-9 text-sm bg-background" value={current('technique')} onChange={e => setParam('technique', e.target.value || undefined)}>
+          </div>
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-[#2D2A26]">Technique</label>
+            <select className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('technique')} onChange={e => setParam('technique', e.target.value || undefined)}>
               <option value="">Toutes</option>
               {techniques.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
+          </div>
         </div>
-      </div>
-      <div className="space-y-6">
+      <div className="space-y-5">
         <RangeSlider
           label="Prix (MAD)"
           min={0} max={10000} step={50}
@@ -112,25 +152,24 @@ export function Filters({ artists, styles, techniques }: { artists: {id:string; 
           }}
           minStepsBetweenThumbs={1}
         />
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="space-y-1">
-            <label className="block text-xs font-medium">Type</label>
-            <select className="w-full border rounded h-9 text-sm bg-background" value={current('kind')} onChange={e => setParam('kind', e.target.value || undefined)}>
-              <option value="">Tous</option>
-              <option value="UNIQUE">Unique</option>
-              <option value="RECREATABLE">Recréable</option>
-            </select>
-          </div>
+        <div className="space-y-1">
+          <label className="block text-xs font-medium text-[#2D2A26]">Type</label>
+          <select className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('kind')} onChange={e => setParam('kind', e.target.value || undefined)}>
+            <option value="">Tous</option>
+            <option value="UNIQUE">Unique</option>
+            <option value="RECREATABLE">Recréable</option>
+          </select>
         </div>
       </div>
       <div className="flex gap-2 pt-2">
-        <Button type="button" variant="outline" className="text-xs" onClick={() => {
+        <Button type="button" variant="outline" size="sm" className="text-xs flex-1 border-[#D8D5C8] text-[#6B2D2D]" onClick={() => {
           const keys = ['q','artist','style','technique','minPrice','maxPrice','minWidth','maxWidth','minHeight','maxHeight','kind']
           const sp = new URLSearchParams(searchParams.toString())
           keys.forEach(k => sp.delete(k))
           router.replace(pathname + (sp.toString() ? '?' + sp.toString() : ''), { scroll: false })
           setQ('')
         }}>Réinitialiser</Button>
+      </div>
       </div>
     </div>
   )

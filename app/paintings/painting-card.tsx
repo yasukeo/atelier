@@ -60,7 +60,7 @@ export default function PaintingCard({ painting }: { painting: PaintingWithRels 
     <div
       ref={cardRef}
       tabIndex={0}
-      className="group rounded-xl border border-[#DCD9CC] bg-[#FDFCFA] shadow-sm hover:shadow-md transition overflow-hidden focus:outline-none focus:ring-2 focus:ring-[#6B2D2D]/50"
+      className="group rounded-lg sm:rounded-xl border border-[#DCD9CC] bg-[#FDFCFA] shadow-sm hover:shadow-md transition overflow-hidden focus:outline-none focus:ring-2 focus:ring-[#6B2D2D]/50"
       aria-roledescription="carousel" aria-label={painting.title}
     >
       <div className="relative aspect-[4/3] bg-[#EAE8DE]">
@@ -72,7 +72,7 @@ export default function PaintingCard({ painting }: { painting: PaintingWithRels 
             src={current.url}
             alt={current.alt || painting.title}
             fill
-            sizes="(max-width:768px) 100vw, 300px"
+            sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 25vw"
             className="object-cover" />
         )}
         {total > 1 && (
@@ -80,24 +80,24 @@ export default function PaintingCard({ painting }: { painting: PaintingWithRels 
             <button
               aria-label="Précédent"
               onClick={() => go(-1)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
+              className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-black/40 text-white w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center opacity-70 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition text-sm sm:text-base"
             >
               ‹
             </button>
             <button
               aria-label="Suivant"
               onClick={() => go(1)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
+              className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 bg-black/40 text-white w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center opacity-70 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition text-sm sm:text-base"
             >
               ›
             </button>
-            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+            <div className="absolute bottom-1.5 sm:bottom-2 left-0 right-0 flex justify-center gap-1">
               {imgs.map((img, i) => (
                 <button
                   key={img.id}
                   aria-label={`Voir image ${i + 1}`}
                   onClick={() => goTo(i)}
-                  className={cn("h-2 w-2 rounded-full border border-white", i === index ? 'bg-white' : 'bg-white/30 hover:bg-white/60')}
+                  className={cn("h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full border border-white", i === index ? 'bg-white' : 'bg-white/30 hover:bg-white/60')}
                 />
               ))}
             </div>
@@ -105,32 +105,32 @@ export default function PaintingCard({ painting }: { painting: PaintingWithRels 
         )}
         {painting.available === false && (
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
-            <span className="text-xs font-medium text-white px-2 py-1 bg-black/50 rounded">Indisponible</span>
+            <span className="text-[10px] sm:text-xs font-medium text-white px-2 py-1 bg-black/50 rounded">Indisponible</span>
           </div>
         )}
       </div>
-      <div className="p-3 space-y-1">
-        <h2 className="font-semibold text-sm leading-tight line-clamp-2" title={painting.title}>{painting.title}</h2>
-        <p className="text-xs text-muted-foreground flex flex-wrap gap-1">
+      <div className="p-2 sm:p-3 space-y-1">
+        <h2 className="font-semibold text-xs sm:text-sm leading-tight line-clamp-2" title={painting.title}>{painting.title}</h2>
+        <p className="text-[10px] sm:text-xs text-muted-foreground flex flex-wrap gap-1">
           <span>{painting.artist?.name}</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span>{painting.widthCm}×{painting.heightCm}cm</span>
-          <span className="text-muted-foreground/40">·</span>
-          <span>{painting.priceMAD} MAD</span>
+          <span className="text-muted-foreground/40 hidden sm:inline">·</span>
+          <span className="hidden sm:inline">{painting.widthCm}×{painting.heightCm}cm</span>
         </p>
+        <p className="text-xs sm:text-sm font-medium text-[#6B2D2D]">{painting.priceMAD} MAD</p>
         {painting.kind === 'RECREATABLE' && (
-          <p className="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 font-medium">Recréable</p>
+          <p className="text-[9px] sm:text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 font-medium">Recréable</p>
         )}
-        <div className="pt-2 flex items-center gap-2">
+        <div className="pt-1.5 sm:pt-2 flex items-center gap-2">
           <Button
             size="sm"
             disabled={isPending || painting.available === false}
             onClick={addToCart}
             variant="secondary"
+            className="text-xs h-8 sm:h-9 px-2 sm:px-3"
           >
             {painting.kind === 'UNIQUE' ? 'Réserver' : 'Ajouter'}
           </Button>
-          {painting.kind === 'UNIQUE' && <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Pièce unique</span>}
+          {painting.kind === 'UNIQUE' && <span className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground hidden sm:inline">Pièce unique</span>}
         </div>
       </div>
     </div>

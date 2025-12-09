@@ -1,6 +1,7 @@
 "use client"
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { ShoppingCartIcon } from './icons'
 
 export default function CartButton() {
   const [count, setCount] = useState<number | null>(null)
@@ -22,10 +23,11 @@ export default function CartButton() {
   }, [])
 
   return (
-    <Link href="/cart" className="relative inline-flex items-center text-xs font-medium text-muted-foreground hover:text-foreground">
-      Panier
+    <Link href="/cart" className="relative inline-flex items-center gap-1.5 text-xs font-medium text-[#8B7355] hover:text-[#6B2D2D] transition-colors mr-2">
+      <ShoppingCartIcon className="w-5 h-5" />
+      <span className="hidden sm:inline">Panier</span>
       {count !== null && count > 0 && (
-        <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+        <span className="absolute -top-2 -right-4 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#6B2D2D] px-1 text-[10px] font-bold text-white">
           {count}
         </span>
       )}

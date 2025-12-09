@@ -12,7 +12,7 @@ export default function ContactPage() {
       </div>
       <ContactCard />
       <div className="text-xs text-[#8B7355]">
-        En alternative directe : <a href="mailto:contact@example.com" className="text-[#6B2D2D] underline underline-offset-4">contact@example.com</a>
+        En alternative directe : <a href="mailto:contact@elwarcha.com" className="text-[#6B2D2D] underline underline-offset-4">contact@elwarcha.com</a>
       </div>
     </div>
   )
