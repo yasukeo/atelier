@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { registerUser } from './actions'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import { EyeIcon, EyeOffIcon } from '@/components/icons'
 
 export default function SignInPage() {
   const params = useSearchParams()
@@ -16,6 +17,10 @@ export default function SignInPage() {
   const [regName, setRegName] = useState('')
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
+  const [regPasswordConfirm, setRegPasswordConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showRegPassword, setShowRegPassword] = useState(false)
+  const [showRegPasswordConfirm, setShowRegPasswordConfirm] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -48,6 +53,10 @@ export default function SignInPage() {
   function onRegister(e: FormEvent) {
     e.preventDefault()
     setError(null); setSuccess(null)
+    if (regPassword !== regPasswordConfirm) {
+      setError('Les mots de passe ne correspondent pas.')
+      return
+    }
     const fd = new FormData()
     fd.set('name', regName)
     fd.set('email', regEmail)
@@ -84,7 +93,12 @@ export default function SignInPage() {
                     <label htmlFor="login-password" className="text-xs font-medium">{t('auth.signIn.password', fr)}</label>
                     <a href="/forgot-password" className="text-xs text-[#6B2D2D] hover:underline">Mot de passe oublié ?</a>
                   </div>
-                  <Input id="login-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••" />
+                  <div className="relative">
+                    <Input id="login-password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••" className="pr-10" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#6B2D2D]">
+                      {showPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={pending}>{pending ? '...' : t('auth.signIn.submit', fr)}</Button>
               </form>
@@ -101,7 +115,21 @@ export default function SignInPage() {
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="reg-password" className="text-xs font-medium">Mot de passe</label>
-                  <Input id="reg-password" type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)} required placeholder="Minimum 6 caractères" />
+                  <div className="relative">
+                    <Input id="reg-password" type={showRegPassword ? 'text' : 'password'} value={regPassword} onChange={e => setRegPassword(e.target.value)} required placeholder="Minimum 6 caractères" className="pr-10" />
+                    <button type="button" onClick={() => setShowRegPassword(!showRegPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#6B2D2D]">
+                      {showRegPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="reg-password-confirm" className="text-xs font-medium">Confirmer le mot de passe</label>
+                  <div className="relative">
+                    <Input id="reg-password-confirm" type={showRegPasswordConfirm ? 'text' : 'password'} value={regPasswordConfirm} onChange={e => setRegPasswordConfirm(e.target.value)} required placeholder="Retapez le mot de passe" className="pr-10" />
+                    <button type="button" onClick={() => setShowRegPasswordConfirm(!showRegPasswordConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#6B2D2D]">
+                      {showRegPasswordConfirm ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={pending}>{pending ? '...' : 'Créer un compte'}</Button>
               </form>
