@@ -1,11 +1,9 @@
 import type { NextAuthOptions, Session } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { z } from 'zod'
-import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { mergeGuestCartIntoUser } from '@/lib/cart'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/db'
 
 const credentialsSchema = z.object({
   email: z.string().email(),
