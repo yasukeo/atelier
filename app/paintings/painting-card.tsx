@@ -63,7 +63,7 @@ export default function PaintingCard({ painting }: { painting: PaintingWithRels 
       className="group rounded-lg sm:rounded-xl border border-[#DCD9CC] bg-[#FDFCFA] shadow-sm hover:shadow-md transition overflow-hidden focus:outline-none focus:ring-2 focus:ring-[#6B2D2D]/50"
       aria-roledescription="carousel" aria-label={painting.title}
     >
-      <div className="relative aspect-[4/3] bg-[#EAE8DE]">
+      <div className="relative aspect-[4/5] bg-[#EAE8DE] overflow-hidden">
         {placeholder ? (
           <div className="flex items-center justify-center h-full text-xs text-muted-foreground">Aucune image</div>
         ) : (

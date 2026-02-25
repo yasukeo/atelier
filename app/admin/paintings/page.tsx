@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/db'
-import { createPainting, updatePainting, deletePainting, deletePaintingImage } from './actions'
+import { deletePainting, deletePaintingImage } from './actions'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import ClientEnhancements, { MultiImageDrop } from './ui.client'
+import ClientEnhancements, { MultiImageDrop, PaintingForm } from './ui.client'
 
 export default async function AdminPaintingsPage({ searchParams }: { searchParams?: Promise<{ error?: string; success?: string }> }) {
   const [paintings, artists, styles, techniques] = await Promise.all([
@@ -24,7 +24,7 @@ export default async function AdminPaintingsPage({ searchParams }: { searchParam
       <h1 className="text-2xl font-semibold mb-4">Paintings</h1>
       <section className="mb-6">
         <h2 className="font-medium mb-2">Add painting</h2>
-  <form action={createPainting} className="grid gap-2 max-w-3xl">
+  <PaintingForm className="grid gap-2 max-w-3xl">
           <div className="grid gap-2 sm:grid-cols-2">
             <Input name="title" placeholder="Title" required />
             <Input name="priceMAD" type="number" placeholder="Price (MAD)" min={0} required />
@@ -73,7 +73,7 @@ export default async function AdminPaintingsPage({ searchParams }: { searchParam
             <MultiImageDrop name="images" />
           </div>
           <Button type="submit" className="w-fit">Ajouter</Button>
-        </form>
+        </PaintingForm>
       </section>
       <ul className="space-y-2">
         {paintings.map(p => (
@@ -105,7 +105,7 @@ export default async function AdminPaintingsPage({ searchParams }: { searchParam
               </div>
             )}
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
-              <form action={updatePainting} className="grid gap-2 sm:col-span-2 sm:grid-cols-3">
+              <PaintingForm method="PUT" className="grid gap-2 sm:col-span-2 sm:grid-cols-3">
                 <input type="hidden" name="id" value={p.id} />
                 <Input name="title" defaultValue={p.title} required />
                 <Input name="priceMAD" type="number" defaultValue={p.priceMAD} min={0} required />
@@ -152,7 +152,7 @@ export default async function AdminPaintingsPage({ searchParams }: { searchParam
                   <MultiImageDrop name="images" />
                 </div>
                 <Button type="submit" variant="secondary" className="w-fit sm:col-span-3">Enregistrer</Button>
-              </form>
+              </PaintingForm>
               <form action={deletePainting} className="sm:col-span-1 self-start">
                 <input type="hidden" name="id" value={p.id} />
                 <Button type="submit" variant="destructive">Supprimer</Button>

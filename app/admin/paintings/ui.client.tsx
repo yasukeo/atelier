@@ -1,5 +1,6 @@
 "use client"
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 export default function ClientEnhancements({ success, error }: { success: string | null; error: string | null }) {
@@ -60,9 +61,11 @@ export function MultiImageDrop({ name, max = 8 }: MultiImageDropProps) {
     }
     setFiles(next)
     setTotalBytes(cumulative)
-    // reflect in hidden input
+    // Sync accumulated files back to the real file input via DataTransfer
     if (inputRef.current) {
-      // Assigning to inputRef.current.files directly is not allowed; rely on the real file input instead.
+      const dt = new DataTransfer()
+      next.forEach(f => dt.items.add(f))
+      inputRef.current.files = dt.files
     }
   }, [files, max, MAX_FILE_BYTES, MAX_TOTAL_BYTES])
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -70,7 +73,16 @@ export function MultiImageDrop({ name, max = 8 }: MultiImageDropProps) {
     onFiles(e.dataTransfer.files)
   }, [onFiles])
   const removeAt = (i: number) => {
-    setFiles(prev => prev.filter((_, idx) => idx !== i))
+    setFiles(prev => {
+      const next = prev.filter((_, idx) => idx !== i)
+      setTotalBytes(next.reduce((sum, f) => sum + f.size, 0))
+      if (inputRef.current) {
+        const dt = new DataTransfer()
+        next.forEach(f => dt.items.add(f))
+        inputRef.current.files = dt.files
+      }
+      return next
+    })
   }
   return (
     <div className="space-y-2">
@@ -115,5 +127,66 @@ export function MultiImageDrop({ name, max = 8 }: MultiImageDropProps) {
         </>
       )}
     </div>
+  )
+}
+
+/**
+ * Client wrapper for painting forms that submits via fetch to the API route.
+ * This avoids React server action multipart parsing issues with file inputs.
+ */
+export function PaintingForm({
+  method = 'POST',
+  children,
+  className,
+}: {
+  method?: 'POST' | 'PUT'
+  children: React.ReactNode
+  className?: string
+}) {
+  const [pending, setPending] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+  const router = useRouter()
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = formRef.current
+    if (!form) return
+    const fd = new FormData(form)
+    setPending(true)
+    try {
+      const res = await fetch('/api/admin/paintings', {
+        method,
+        body: fd,
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(
+          data.error === 'invalid' ? 'Données invalides' :
+          data.error === 'file-too-large' ? 'Image > 5MB' :
+          data.error === 'payload-too-large' ? 'Taille totale des images trop grande' :
+          data.error === 'unauthorized' ? 'Non autorisé' :
+          'Erreur inattendue'
+        )
+      } else {
+        toast.success(
+          data.success === 'created' ? 'Œuvre créée' :
+          data.success === 'updated' ? 'Œuvre mise à jour' :
+          'Succès'
+        )
+        router.refresh()
+        form.reset()
+      }
+    } catch {
+      toast.error('Erreur réseau')
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <form ref={formRef} onSubmit={handleSubmit} className={className}>
+      {children}
+      {pending && <p className="text-xs text-muted-foreground animate-pulse">Envoi en cours…</p>}
+    </form>
   )
 }
