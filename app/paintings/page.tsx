@@ -7,8 +7,9 @@ import { Prisma } from '@prisma/client'
 
 export const revalidate = 60 // cache briefly for public view
 
-export default async function PaintingsGalleryPage({ searchParams }: { searchParams: Record<string,string|undefined> }) {
-  const filters = parsePaintingFilters(searchParams)
+export default async function PaintingsGalleryPage({ searchParams }: { searchParams: Promise<Record<string,string|undefined>> }) {
+  const resolvedParams = await searchParams
+  const filters = parsePaintingFilters(resolvedParams)
   const where: Prisma.PaintingWhereInput = {
     available: true, // Only show available paintings
   }

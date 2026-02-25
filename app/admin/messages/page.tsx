@@ -21,8 +21,9 @@ async function getMessagesPage(page: number) {
   return { rows, total }
 }
 
-export default async function AdminMessagesPage({ searchParams }: { searchParams: { page?: string } }) {
-  const page = Math.max(1, Number(searchParams.page) || 1)
+export default async function AdminMessagesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const resolvedParams = await searchParams
+  const page = Math.max(1, Number(resolvedParams.page) || 1)
   const { rows: messages, total } = await getMessagesPage(page)
   const pageCount = Math.ceil(total / PAGE_SIZE) || 1
   const hasPrev = page > 1

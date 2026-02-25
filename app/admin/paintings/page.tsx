@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import ClientEnhancements, { MultiImageDrop } from './ui.client'
 
-export default async function AdminPaintingsPage({ searchParams }: { searchParams?: { error?: string; success?: string } }) {
+export default async function AdminPaintingsPage({ searchParams }: { searchParams?: Promise<{ error?: string; success?: string }> }) {
   const [paintings, artists, styles, techniques] = await Promise.all([
     prisma.painting.findMany({
       include: { artist: true, style: true, technique: true, images: { orderBy: { position: 'asc' } } },
@@ -15,8 +15,9 @@ export default async function AdminPaintingsPage({ searchParams }: { searchParam
     prisma.style.findMany({ orderBy: { name: 'asc' } }),
     prisma.technique.findMany({ orderBy: { name: 'asc' } }),
   ])
-  const error = searchParams?.error ?? null
-  const success = searchParams?.success ?? null
+  const resolvedParams = await searchParams
+  const error = resolvedParams?.error ?? null
+  const success = resolvedParams?.success ?? null
   return (
     <div>
       <ClientEnhancements success={success} error={error} />

@@ -9,8 +9,9 @@ import React from 'react'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminMessageDetail({ params }: { params: { id: string } }) {
-  const message = await prisma.contactMessage.findUnique({ where: { id: params.id } })
+export default async function AdminMessageDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const message = await prisma.contactMessage.findUnique({ where: { id } })
   if (!message) return notFound()
 
   if (!message.readAt) {

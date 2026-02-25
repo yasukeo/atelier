@@ -7,8 +7,9 @@ export const dynamic = 'force-dynamic'
 
 function formatMAD(v: number) { return new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v) }
 
-export default async function OrderSuccessPage({ searchParams }: { searchParams: Record<string,string|undefined> }) {
-  const id = searchParams.id
+export default async function OrderSuccessPage({ searchParams }: { searchParams: Promise<Record<string,string|undefined>> }) {
+  const resolvedParams = await searchParams
+  const id = resolvedParams.id
   if (!id) notFound()
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) notFound()

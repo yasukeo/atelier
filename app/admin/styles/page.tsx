@@ -3,9 +3,10 @@ import { createStyle, updateStyle, deleteStyle } from './actions'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
-export default async function AdminStylesPage({ searchParams }: { searchParams?: { error?: string } }) {
+export default async function AdminStylesPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
   const styles = await prisma.style.findMany({ orderBy: { name: 'asc' } })
-  const error = searchParams?.error ?? null
+  const resolvedParams = await searchParams
+  const error = resolvedParams?.error ?? null
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-4">Styles</h1>

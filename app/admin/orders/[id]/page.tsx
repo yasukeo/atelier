@@ -22,9 +22,10 @@ const STATUSES: { value: string; label: string }[] = [
 
 function formatDate(d: Date) { return d.toLocaleString('fr-MA', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) }
 
-export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
+export default async function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const order = await prisma.order.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { customer: true, items: { include: { painting: true } }, discountCode: true, statusHistory: { orderBy: { createdAt: 'asc' } } },
   })
   if (!order) notFound()

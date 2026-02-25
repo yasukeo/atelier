@@ -3,9 +3,10 @@ import { createTechnique, updateTechnique, deleteTechnique } from './actions'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
-export default async function AdminTechniquesPage({ searchParams }: { searchParams?: { error?: string } }) {
+export default async function AdminTechniquesPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
   const techniques = await prisma.technique.findMany({ orderBy: { name: 'asc' } })
-  const error = searchParams?.error ?? null
+  const resolvedParams = await searchParams
+  const error = resolvedParams?.error ?? null
   return (
     <div>
       <h1 className="text-2xl font-semibold mb-4">Techniques</h1>

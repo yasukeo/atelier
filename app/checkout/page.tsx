@@ -5,8 +5,9 @@ import { validateDiscount } from '@/lib/discounts'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CheckoutPage({ searchParams }: { searchParams: { [k: string]: string | string[] | undefined } }) {
-  const discountParamRaw = typeof searchParams.discount === 'string' ? searchParams.discount.trim() : undefined
+export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ [k: string]: string | string[] | undefined }> }) {
+  const resolvedParams = await searchParams
+  const discountParamRaw = typeof resolvedParams.discount === 'string' ? resolvedParams.discount.trim() : undefined
   let summary
   let initialDiscountCode: string | undefined
   if (discountParamRaw) {
