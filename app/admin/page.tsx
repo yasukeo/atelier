@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db'
 import { Suspense } from 'react'
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default async function AdminPage() {
   return (

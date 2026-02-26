@@ -3,6 +3,8 @@ import { createArtist, updateArtist, deleteArtist } from './actions'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminArtistsPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
   const artists = await prisma.artist.findMany({ orderBy: { name: 'asc' } })
   const resolvedParams = await searchParams

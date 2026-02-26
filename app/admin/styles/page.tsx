@@ -3,6 +3,8 @@ import { createStyle, updateStyle, deleteStyle } from './actions'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminStylesPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
   const styles = await prisma.style.findMany({ orderBy: { name: 'asc' } })
   const resolvedParams = await searchParams

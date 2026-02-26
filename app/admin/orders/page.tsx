@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/db'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 const STATUS_LABEL: Record<string,string> = {
   PENDING_REVIEW: 'En attente',
   IN_PROGRESS: 'En cours',

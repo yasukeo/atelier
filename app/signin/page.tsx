@@ -1,6 +1,6 @@
 "use client"
 import { signIn } from 'next-auth/react'
-import { useState, useTransition, FormEvent, useEffect } from 'react'
+import { useState, useTransition, FormEvent, useEffect, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { fr, t } from '@/lib/i18n'
@@ -11,6 +11,10 @@ import Image from 'next/image'
 import { EyeIcon, EyeOffIcon } from '@/components/icons'
 
 export default function SignInPage() {
+  return <Suspense><SignInContent /></Suspense>
+}
+
+function SignInContent() {
   const params = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

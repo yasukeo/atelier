@@ -3,6 +3,8 @@ import { createTechnique, updateTechnique, deleteTechnique } from './actions'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminTechniquesPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
   const techniques = await prisma.technique.findMany({ orderBy: { name: 'asc' } })
   const resolvedParams = await searchParams

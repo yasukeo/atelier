@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import ClientEnhancements, { MultiImageDrop, PaintingForm } from './ui.client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminPaintingsPage({ searchParams }: { searchParams?: Promise<{ error?: string; success?: string }> }) {
   const [paintings, artists, styles, techniques] = await Promise.all([
     prisma.painting.findMany({

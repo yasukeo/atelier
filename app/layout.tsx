@@ -9,7 +9,9 @@ import Link from 'next/link'
 import CartButton from '@/components/CartButton'
 import Image from 'next/image'
 import { InstagramIcon, FacebookIcon, TikTokIcon } from '@/components/icons'
+import type { Session } from 'next-auth'
 import { MobileNav } from '@/components/MobileNav'
+import { Suspense } from 'react'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +29,12 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions)
+  let session: Session | null = null
+  try {
+    session = await getServerSession(authOptions)
+  } catch {
+    // Graceful fallback: show page as logged-out rather than crashing
+  }
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#F7F5F0]`}>        
@@ -53,10 +60,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="flex items-center gap-3">
               <CartButton />
               <div className="hidden md:flex">
-                <AuthActions session={(session?.user as { email?: string; role?: string }) ?? null} variant="bar" />
+                <Suspense>
+                  <AuthActions session={(session?.user as { email?: string; role?: string }) ?? null} variant="bar" />
+                </Suspense>
               </div>
               {/* Mobile Menu */}
-              <MobileNav session={(session?.user as { email?: string; role?: string }) ?? null} />
+              <Suspense>
+                <MobileNav session={(session?.user as { email?: string; role?: string }) ?? null} />
+              </Suspense>
             </div>
           </div>
         </header>

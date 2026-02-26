@@ -3,11 +3,15 @@ import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { resetPassword } from './actions'
-import { useTransition } from 'react'
+import { useTransition, Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
 export default function ResetPasswordPage() {
+  return <Suspense><ResetPasswordContent /></Suspense>
+}
+
+function ResetPasswordContent() {
   const params = useSearchParams()
   const token = params.get('token')
   const error = params.get('error')

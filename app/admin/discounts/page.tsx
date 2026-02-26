@@ -4,6 +4,7 @@ import { resolveDiscountStatus } from '@/lib/discounts'
 import { createDiscount, updateDiscount, deleteDiscount } from './actions'
 import { Suspense } from 'react'
 
+export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Discount Codes | Admin' }
 
 function statusBadge(status: string) {
