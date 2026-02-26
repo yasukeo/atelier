@@ -1,22 +1,42 @@
 import { PrismaClient } from '@prisma/client'
 
 /**
- * Retry-enabled Prisma client.
+ * Robust Prisma client for Supabase + Vercel serverless.
  *
- * Supabase PgBouncer drops connections intermittently on serverless (Vercel).
- * We wrap every query in an automatic retry (up to 3 attempts with backoff)
- * so transient connection failures don't crash the page.
+ * - Auto-retries transient connection errors (3×, with backoff)
+ * - Disconnects after idle (avoids stale sockets to PgBouncer)
  */
 
 const MAX_RETRIES = 3
-const BASE_DELAY_MS = 400
+const BASE_DELAY_MS = 300        // 300 → 600 → 900ms
+
+function isRetryable(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error)
+  return (
+    msg.includes("Can't reach database server") ||
+    msg.includes('Connection refused') ||
+    msg.includes('connect ETIMEDOUT') ||
+    msg.includes('ECONNRESET') ||
+    msg.includes('ECONNREFUSED') ||
+    msg.includes('connection timed out') ||
+    msg.includes('prepared statement') ||
+    msg.includes('socket hang up') ||
+    msg.includes('Server has closed the connection') ||
+    msg.includes('Connection pool timeout') ||
+    msg.includes('Timed out fetching a new connection')
+  )
+}
+
+async function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms))
+}
 
 function createPrismaClient() {
-  const base = new PrismaClient({
+  const client = new PrismaClient({
     log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
   })
 
-  return base.$extends({
+  return client.$extends({
     query: {
       async $allOperations({ args, query }) {
         let lastError: unknown
@@ -25,25 +45,11 @@ function createPrismaClient() {
             return await query(args)
           } catch (error: unknown) {
             lastError = error
-            if (attempt === MAX_RETRIES) break
+            if (!isRetryable(error) || attempt === MAX_RETRIES) throw error
 
-            // Only retry on transient connection errors
-            const msg = (error instanceof Error ? error.message : String(error))
-            const retryable =
-              msg.includes("Can't reach database server") ||
-              msg.includes('Connection refused') ||
-              msg.includes('connect ETIMEDOUT') ||
-              msg.includes('ECONNRESET') ||
-              msg.includes('ECONNREFUSED') ||
-              msg.includes('connection timed out') ||
-              msg.includes('prepared statement') ||
-              msg.includes('socket hang up') ||
-              msg.includes('Server has closed the connection')
-
-            if (!retryable) throw error
-
-            // Exponential back-off: 400ms → 800ms → 1200ms
-            await new Promise((r) => setTimeout(r, BASE_DELAY_MS * (attempt + 1)))
+            // On connection error, force Prisma to open a fresh connection
+            try { await client.$disconnect() } catch { /* ignore */ }
+            await sleep(BASE_DELAY_MS * (attempt + 1))
           }
         }
         throw lastError
