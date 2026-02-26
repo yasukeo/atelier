@@ -1,16 +1,17 @@
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import nextDynamic from 'next/dynamic'
+import dynamic from 'next/dynamic'
 import type { Painting, Artist, PaintingImage } from '@prisma/client'
 import { t, tObj } from '@/lib/i18n'
 import HeroImagesCarousel from './HeroImagesCarousel.client'
 
 // Lazy import the painting card client component so the homepage server component stays light
-const PaintingCard = nextDynamic(() => import('./paintings/painting-card'))
+const PaintingCard = dynamic(() => import('./paintings/painting-card'))
 
 interface PaintingWithRels extends Painting { artist: Artist; images: PaintingImage[] }
 
-export const dynamic = 'force-dynamic'
+// ISR: cache for 5 min; on revalidation failure Next.js keeps serving stale content
+export const revalidate = 300
 
 export default async function Home() {
   // Session no longer needed here since auth actions are only in the global top bar.

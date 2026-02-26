@@ -5,7 +5,8 @@ import { Filters } from './Filters.client'
 import { parsePaintingFilters } from '@/lib/painting-filters'
 import { Prisma } from '@prisma/client'
 
-export const dynamic = 'force-dynamic'
+// ISR: cache for 1 min; on revalidation failure Next.js keeps serving stale content
+export const revalidate = 60
 
 export default async function PaintingsGalleryPage({ searchParams }: { searchParams: Promise<Record<string,string|undefined>> }) {
   const resolvedParams = await searchParams
