@@ -1,33 +1,27 @@
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import dynamic from 'next/dynamic'
+import nextDynamic from 'next/dynamic'
 import type { Painting, Artist, PaintingImage } from '@prisma/client'
 import { t, tObj } from '@/lib/i18n'
 import HeroImagesCarousel from './HeroImagesCarousel.client'
 
 // Lazy import the painting card client component so the homepage server component stays light
-const PaintingCard = dynamic(() => import('./paintings/painting-card'))
+const PaintingCard = nextDynamic(() => import('./paintings/painting-card'))
 
 interface PaintingWithRels extends Painting { artist: Artist; images: PaintingImage[] }
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export default async function Home() {
   // Session no longer needed here since auth actions are only in the global top bar.
   // const session = await getServerSession(authOptions)
 
-  // Parallel data fetching — graceful fallback to empty if DB is unreachable
-  let paintings: PaintingWithRels[] = []
-  try {
-    paintings = await prisma.painting.findMany({
-      where: { available: true },
-      include: { artist: true, images: { orderBy: { position: 'asc' } } },
-      orderBy: { createdAt: 'desc' },
-      take: 6,
-    }) as PaintingWithRels[]
-  } catch (err) {
-    console.error('[Home] DB query failed:', err)
-  }
+  const paintings = await prisma.painting.findMany({
+    where: { available: true },
+    include: { artist: true, images: { orderBy: { position: 'asc' } } },
+    orderBy: { createdAt: 'desc' },
+    take: 6,
+  }) as PaintingWithRels[]
 
   return (
     <div className="min-h-screen flex flex-col">

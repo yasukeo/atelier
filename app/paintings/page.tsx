@@ -4,11 +4,8 @@ import PaintingCard from './painting-card'
 import { Filters } from './Filters.client'
 import { parsePaintingFilters } from '@/lib/painting-filters'
 import { Prisma } from '@prisma/client'
-import type { Painting, Artist, PaintingImage } from '@prisma/client'
 
-type PaintingWithRels = Painting & { artist: Artist; images: PaintingImage[] }
-
-export const revalidate = 60 // cache briefly for public view
+export const dynamic = 'force-dynamic'
 
 export default async function PaintingsGalleryPage({ searchParams }: { searchParams: Promise<Record<string,string|undefined>> }) {
   const resolvedParams = await searchParams
@@ -44,26 +41,17 @@ export default async function PaintingsGalleryPage({ searchParams }: { searchPar
     ]
   }
   // NOTE: color palette future filter placeholder (filters.colors)
-  let paintings: PaintingWithRels[] = []
-  let artists: { id: string; name: string }[] = []
-  let styles: { id: string; name: string }[] = []
-  let techniques: { id: string; name: string }[] = []
-
-  try {
-    ;[paintings, artists, styles, techniques] = await Promise.all([
-      prisma.painting.findMany({
-        where,
-        include: { artist: true, images: { orderBy: { position: 'asc' } } },
-        orderBy: { createdAt: 'desc' },
-        take: 60,
-      }),
-      prisma.artist.findMany({ orderBy: { name: 'asc' }, take: 200, select: { id: true, name: true } }),
-      prisma.style.findMany({ orderBy: { name: 'asc' }, take: 200, select: { id: true, name: true } }),
-      prisma.technique.findMany({ orderBy: { name: 'asc' }, take: 200, select: { id: true, name: true } }),
-    ])
-  } catch (err) {
-    console.error('[Gallery] DB query failed:', err)
-  }
+  const [paintings, artists, styles, techniques] = await Promise.all([
+    prisma.painting.findMany({
+      where,
+      include: { artist: true, images: { orderBy: { position: 'asc' } } },
+      orderBy: { createdAt: 'desc' },
+      take: 60,
+    }),
+    prisma.artist.findMany({ orderBy: { name: 'asc' }, take: 200, select: { id: true, name: true } }),
+    prisma.style.findMany({ orderBy: { name: 'asc' }, take: 200, select: { id: true, name: true } }),
+    prisma.technique.findMany({ orderBy: { name: 'asc' }, take: 200, select: { id: true, name: true } }),
+  ])
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 sm:py-10">
       <div className="flex items-baseline justify-between mb-6 sm:mb-8 gap-4 flex-wrap">
