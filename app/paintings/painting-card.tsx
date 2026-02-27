@@ -12,9 +12,106 @@ interface PaintingWithRels extends Painting {
   images: PaintingImage[]
 }
 
+/* ─── Lightbox (fullscreen overlay) ─── */
+function Lightbox({ images, startIndex, painting, onClose }: {
+  images: PaintingImage[]
+  startIndex: number
+  painting: PaintingWithRels
+  onClose: () => void
+}) {
+  const [idx, setIdx] = useState(startIndex)
+  const total = images.length
+  const go = useCallback((dir: number) => setIdx(i => (i + dir + total) % total), [total])
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft') go(-1)
+      if (e.key === 'ArrowRight') go(1)
+    }
+    document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [onClose, go])
+
+  const current = images[idx]
+  if (!current) return null
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center" onClick={onClose}>
+      <div className="relative w-full h-full max-w-5xl max-h-[90vh] m-4 flex items-center justify-center" onClick={e => e.stopPropagation()}>
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 z-10 bg-black/50 hover:bg-black/70 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl transition"
+          aria-label="Fermer"
+        >
+          ✕
+        </button>
+
+        {/* Image */}
+        <div className="relative w-full h-full">
+          <Image
+            src={current.url}
+            alt={current.alt || painting.title}
+            fill
+            sizes="90vw"
+            className="object-contain"
+            priority
+          />
+        </div>
+
+        {/* Nav arrows */}
+        {total > 1 && (
+          <>
+            <button
+              onClick={() => go(-1)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl transition"
+              aria-label="Précédent"
+            >
+              ‹
+            </button>
+            <button
+              onClick={() => go(1)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl transition"
+              aria-label="Suivant"
+            >
+              ›
+            </button>
+          </>
+        )}
+
+        {/* Dots */}
+        {total > 1 && (
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+            {images.map((img, i) => (
+              <button
+                key={img.id}
+                onClick={() => setIdx(i)}
+                className={cn("h-2.5 w-2.5 rounded-full border border-white/60 transition", i === idx ? 'bg-white' : 'bg-white/30 hover:bg-white/60')}
+                aria-label={`Image ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Caption */}
+        <div className="absolute bottom-10 left-0 right-0 text-center pointer-events-none">
+          <p className="text-white/80 text-sm font-medium drop-shadow">{painting.title} — {painting.artist?.name}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Painting Card ─── */
 export default function PaintingCard({ painting }: { painting: PaintingWithRels }) {
   const { images } = painting
   const [index, setIndex] = useState(0)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const imgs = images.length ? images : []
   const total = imgs.length
   const go = useCallback((dir: number) => {
@@ -63,7 +160,7 @@ export default function PaintingCard({ painting }: { painting: PaintingWithRels 
       className="group rounded-lg sm:rounded-xl border border-[#DCD9CC] bg-[#FDFCFA] shadow-sm hover:shadow-md transition overflow-hidden focus:outline-none focus:ring-2 focus:ring-[#6B2D2D]/50"
       aria-roledescription="carousel" aria-label={painting.title}
     >
-      <div className="relative aspect-[4/5] bg-[#EAE8DE] overflow-hidden">
+      <div className="relative aspect-[4/5] bg-[#EAE8DE] overflow-hidden cursor-zoom-in" onDoubleClick={() => !placeholder && setLightboxOpen(true)}>
         {placeholder ? (
           <div className="flex items-center justify-center h-full text-xs text-muted-foreground">Aucune image</div>
         ) : (
@@ -108,6 +205,17 @@ export default function PaintingCard({ painting }: { painting: PaintingWithRels 
             <span className="text-[10px] sm:text-xs font-medium text-white px-2 py-1 bg-black/50 rounded">Indisponible</span>
           </div>
         )}
+        {/* Expand hint */}
+        {!placeholder && (
+          <button
+            onClick={() => setLightboxOpen(true)}
+            className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-black/40 hover:bg-black/60 text-white w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
+            aria-label="Voir en grand"
+            title="Double-clic ou cliquez pour agrandir"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          </button>
+        )}
       </div>
       <div className="p-2 sm:p-3 space-y-1">
         <h2 className="font-semibold text-xs sm:text-sm leading-tight line-clamp-2" title={painting.title}>{painting.title}</h2>
@@ -133,6 +241,16 @@ export default function PaintingCard({ painting }: { painting: PaintingWithRels 
           {painting.kind === 'UNIQUE' && <span className="text-[9px] sm:text-[10px] uppercase tracking-wide text-muted-foreground hidden sm:inline">Pièce unique</span>}
         </div>
       </div>
+
+      {/* Fullscreen lightbox */}
+      {lightboxOpen && imgs.length > 0 && (
+        <Lightbox
+          images={imgs}
+          startIndex={index}
+          painting={painting}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   )
 }
