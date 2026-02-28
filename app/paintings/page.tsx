@@ -3,6 +3,18 @@ import Link from 'next/link'
 import PaintingCard from './painting-card'
 import { Filters } from './Filters.client'
 import { parsePaintingFilters } from '@/lib/painting-filters'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Galerie de peintures',
+  description: "Explorez notre galerie de peintures : tableaux originaux, art marocain contemporain, pièces uniques et recréations sur mesure. Filtrez par artiste, style, technique et prix.",
+  alternates: { canonical: 'https://www.elwarcha.com/paintings' },
+  openGraph: {
+    title: 'Galerie | Elwarcha',
+    description: "Tableaux originaux, art marocain contemporain, pièces uniques et recréations.",
+    url: 'https://www.elwarcha.com/paintings',
+  },
+}
 import { Prisma } from '@prisma/client'
 import { Suspense } from 'react'
 import { PaintingGridSkeleton } from './skeletons'

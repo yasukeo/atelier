@@ -3,8 +3,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'À propos | Elwarcha',
-  description: "Découvrez Elwarcha: mission, valeurs, équipe et approche artistique.",
+  title: 'À propos',
+  description: "Découvrez Elwarcha الورشة : notre mission, nos valeurs, notre équipe et notre approche artistique. Atelier d'art marocain.",
+  alternates: { canonical: 'https://www.elwarcha.com/about' },
+  openGraph: {
+    title: 'À propos | Elwarcha',
+    description: "Notre mission, nos valeurs et notre approche artistique.",
+    url: 'https://www.elwarcha.com/about',
+  },
 }
 
 const VALUES = [

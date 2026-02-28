@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import dynamic from 'next/dynamic'
+import type { Metadata } from 'next'
 import type { Painting, Artist, PaintingImage } from '@prisma/client'
 import { t, tObj } from '@/lib/i18n'
 import HeroImagesCarousel from './HeroImagesCarousel.client'
@@ -9,6 +10,45 @@ import { HomePaintingsSkeleton } from './paintings/skeletons'
 
 // Lazy import the painting card client component so the homepage server component stays light
 const PaintingCard = dynamic(() => import('./paintings/painting-card'))
+
+export const metadata: Metadata = {
+  title: "Elwarcha | الورشة - Galerie d'art marocain | Peintures & Tableaux",
+  description: "Elwarcha الورشة : galerie d'art en ligne. Peintures originales, tableaux marocains faits main, recréations sur mesure. Livraison au Maroc et international. Achetez des œuvres d'art uniques.",
+  alternates: { canonical: 'https://www.elwarcha.com' },
+  openGraph: {
+    title: "Elwarcha | الورشة - Galerie d'art marocain",
+    description: "Peintures originales, tableaux marocains faits main, recréations sur mesure. Achetez en ligne.",
+    url: 'https://www.elwarcha.com',
+  },
+}
+
+/* JSON-LD structured data for the homepage */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Elwarcha | الورشة',
+  url: 'https://www.elwarcha.com',
+  description: "Galerie d'art marocain en ligne. Peintures originales et recréations sur mesure.",
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: 'https://www.elwarcha.com/paintings?q={search_term_string}',
+    'query-input': 'required name=search_term_string',
+  },
+}
+
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Elwarcha',
+  alternateName: 'الورشة',
+  url: 'https://www.elwarcha.com',
+  logo: 'https://www.elwarcha.com/logos/Plan%20de%20travail%2011.png',
+  sameAs: [
+    'https://www.instagram.com/el.warcha/',
+    'https://www.facebook.com/profile.php?id=61581883214871',
+    'https://www.tiktok.com/@elwarcha.com',
+  ],
+}
 
 interface PaintingWithRels extends Painting { artist: Artist; images: PaintingImage[] }
 
@@ -73,6 +113,8 @@ async function HeroSection() {
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
       {/* Hero */}
       <Suspense fallback={
         <section className="relative overflow-hidden">

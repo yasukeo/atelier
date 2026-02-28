@@ -1,4 +1,11 @@
 import { ContactCard } from './ContactForm.client'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Contact',
+  description: "Contactez Elwarcha الورشة pour toute question sur une œuvre, une commande sur mesure ou un partenariat. Réponse rapide.",
+  alternates: { canonical: 'https://www.elwarcha.com/contact' },
+}
 
 export const dynamic = 'force-dynamic'
 

@@ -3,6 +3,13 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import ProfileClient from './ProfileClient'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Mon profil',
+  description: 'Gérez votre profil Elwarcha.',
+  robots: { index: false, follow: false },
+}
 
 export const dynamic = 'force-dynamic'
 

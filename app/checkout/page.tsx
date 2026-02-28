@@ -2,6 +2,13 @@ import { getCart } from '@/lib/cart'
 import CheckoutClient from './CheckoutClient'
 import { redirect } from 'next/navigation'
 import { validateDiscount } from '@/lib/discounts'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Paiement',
+  description: 'Finalisez votre commande Elwarcha.',
+  robots: { index: false, follow: false },
+}
 
 export const dynamic = 'force-dynamic'
 

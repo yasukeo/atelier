@@ -24,8 +24,60 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Elwarcha | الورشة - Galerie d'art marocain",
-  description: "Découvrez des œuvres d'art uniques et des recréations sur mesure. Galerie en ligne et atelier d'art marocain.",
+  metadataBase: new URL('https://www.elwarcha.com'),
+  title: {
+    default: "Elwarcha | الورشة - Galerie d'art marocain",
+    template: '%s | Elwarcha',
+  },
+  description: "Découvrez des œuvres d'art uniques et des recréations sur mesure. Peintures originales, art marocain, tableaux faits main. Livraison au Maroc et à l'international.",
+  keywords: [
+    'elwarcha', 'الورشة', 'peinture', 'tableau', 'art marocain', 'galerie art',
+    'peinture marocaine', 'art en ligne', 'acheter tableau', 'painting', 'moroccan art',
+    'handmade painting', 'buy art online', 'galerie peinture maroc',
+    'toile peinte', 'décoration murale', 'art contemporain maroc',
+  ],
+  authors: [{ name: 'Elwarcha' }],
+  creator: 'Elwarcha',
+  openGraph: {
+    type: 'website',
+    locale: 'fr_MA',
+    url: 'https://www.elwarcha.com',
+    siteName: 'Elwarcha | الورشة',
+    title: "Elwarcha | الورشة - Galerie d'art marocain",
+    description: "Découvrez des œuvres d'art uniques et des recréations sur mesure. Peintures originales, art marocain, tableaux faits main.",
+    images: [
+      {
+        url: '/logos/Plan de travail 11.png',
+        width: 1200,
+        height: 630,
+        alt: 'Elwarcha - الورشة',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Elwarcha | الورشة - Galerie d'art marocain",
+    description: "Découvrez des œuvres d'art uniques et des recréations sur mesure. Peintures originales, art marocain.",
+    images: ['/logos/Plan de travail 11.png'],
+  },
+  alternates: {
+    canonical: 'https://www.elwarcha.com',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    // Add your Google Search Console verification code here once you have it:
+    // google: 'your-verification-code',
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
