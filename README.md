@@ -1,32 +1,37 @@
-# Atelier storefront
+# ElWarcha Atelier
 
-Modern e-commerce experience for curated art pieces, built on the Next.js App Router with TypeScript, Prisma, and Tailwind CSS. The app bundles a full storefront, shopping cart, checkout pipeline, contact form, and an authenticated admin area for managing paintings, artists, and discounts.
+> **Live:** [www.elwarcha.com](https://www.elwarcha.com)
+
+Modern e-commerce storefront for curated art pieces, built on the Next.js App Router with TypeScript, Prisma, and Tailwind CSS. The app bundles a full storefront with painting gallery, shopping cart, checkout pipeline, contact form, and an authenticated admin area for managing paintings, artists, styles, techniques, and discounts.
 
 ## Tech stack
 
-- Next.js 15 (App Router) + React 19 with Server/Client Components
-- TypeScript, ESLint 9, and Turbopack builds
-- Tailwind CSS v4 with custom UI primitives in `components/ui`
-- Prisma ORM targeting MySQL (`DATABASE_URL`) with seeds in `prisma/seed.mjs`
-- next-auth for credentials + email-based flows
-- Vitest + Testing Library for unit/component tests, Playwright for e2e, and Prisma for data access helpers
+- **Next.js 15** (App Router) + **React 19** with Server & Client Components
+- **TypeScript**, ESLint 9, and Turbopack builds
+- **Tailwind CSS v4** with custom UI primitives in `components/ui`
+- **Prisma 6** ORM targeting **PostgreSQL** (Supabase) with seeds in `prisma/seed.mjs`
+- **next-auth** for credentials-based authentication (JWT strategy)
+- **Cloudinary** for image storage (direct browser-to-Cloudinary signed uploads)
+- **Vercel** for hosting
+- Vitest + Testing Library for unit/component tests, Playwright for e2e
 
 ## Repository layout
 
 - `app/` – routed features (storefront, admin dashboard, checkout, auth, API routes)
 - `components/` – shared client-side widgets and shadcn-inspired UI kit
-- `lib/` – data access helpers (auth, cart, discounts, media uploads, validation, etc.)
+- `lib/` – data access helpers (auth, cart, discounts, media uploads, validation, DB with retry logic)
 - `prisma/` – schema, migrations, ERD, and seed script
 - `tests/` & `e2e/` – Vitest suites and Playwright smoke tests
 
 ## Prerequisites
 
 - Node.js 20+ and npm 10+
-- MySQL 8 (or a compatible service) accessible via `DATABASE_URL`
+- PostgreSQL database (or a Supabase project) accessible via `DATABASE_URL`
 - A `.env` file that at minimum defines:
-	- `DATABASE_URL="mysql://user:pass@localhost:3306/atelier"`
-	- `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
-	- Any mailer / Cloudinary keys referenced in `lib/email.ts` and `lib/media.ts`
+  - `DATABASE_URL="postgresql://user:pass@host:5432/postgres"`
+  - `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+  - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+  - Any mailer keys referenced in `lib/email.ts`
 
 ## Setup & development
 
@@ -42,18 +47,26 @@ npm run prisma:seed   # optional demo content
 npm run dev
 ```
 
-Visit http://localhost:3000 to browse the storefront and http://localhost:3000/admin once you are authenticated.
+Visit http://localhost:3000 to browse the storefront and http://localhost:3000/admin once you are authenticated as an admin.
 
 ## Quality checks
 
 | Command | Purpose |
 | --- | --- |
-| `npm run lint` | ESLint across the monorepo |
-| `npm run test` | Vitest unit/component suites (requires a reachable MySQL instance and seeded data for discount tests) |
+| `npm run lint` | ESLint across the project |
+| `npm run test` | Vitest unit/component suites |
 | `npm run e2e` | Playwright end-to-end smoke tests (expects a running dev server) |
 | `npm run build` | Production build with Turbopack |
 
-> **Note:** In CI-free environments, Vitest discount specs will fail unless MySQL is running on `localhost:3306` with the `atelier` schema. Either start the database (see `prisma/schema.prisma`) or skip those suites with `npm run test -- tests --exclude-pattern=discounts.test.ts`.
+## Deployment
+
+The app is deployed on **Vercel** with automatic deploys from the `main` branch. Ensure the following environment variables are set in your Vercel project:
+
+- `DATABASE_URL` (Supabase Session pooler, port 5432)
+- `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+
+Painting images are uploaded directly from the browser to Cloudinary (signed uploads) to bypass Vercel's 4.5 MB body size limit.
 
 ## Launching locally
 
@@ -65,6 +78,7 @@ When you are ready for production, build with `npm run build` and start with `np
 
 ## Troubleshooting
 
-- **Database connection errors** – confirm the `DATABASE_URL` host/port matches your MySQL instance and run `npx prisma migrate dev` to create the schema.
+- **Database connection errors** – confirm the `DATABASE_URL` host/port matches your PostgreSQL instance and run `npx prisma migrate dev` to create the schema. The app includes automatic retry logic (3× with exponential backoff) for transient connection failures.
 - **Vitest smoke test failures** – `tests/smoke.test.tsx` renders `app/page.tsx`; if you modify the hero image alt text update the test accordingly.
-- **Playwright “test() called in config” error** – Run `npm run e2e` from the repo root so Playwright uses `playwright.config.ts` instead of trying to evaluate tests during Vitest runs.
+- **Playwright "test() called in config" error** – Run `npm run e2e` from the repo root so Playwright uses `playwright.config.ts` instead of trying to evaluate tests during Vitest runs.
+- **Painting upload fails on Vercel** – Ensure Cloudinary env vars are set. Images are uploaded directly from the browser to Cloudinary; only URLs are sent to the API route.
