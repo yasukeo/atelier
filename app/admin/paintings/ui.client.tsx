@@ -131,8 +131,42 @@ export function MultiImageDrop({ name, max = 8 }: MultiImageDropProps) {
 }
 
 /**
- * Client wrapper for painting forms that submits via fetch to the API route.
- * This avoids React server action multipart parsing issues with file inputs.
+ * Upload files directly from the browser to Cloudinary using a signed request.
+ * Returns an array of Cloudinary secure URLs.
+ */
+async function uploadFilesToCloudinary(files: File[]): Promise<string[]> {
+  if (files.length === 0) return []
+
+  // 1. Get a signed upload token from our API
+  const signRes = await fetch('/api/admin/cloudinary-sign')
+  if (!signRes.ok) throw new Error('Failed to get upload signature')
+  const { signature, timestamp, folder, cloudName, apiKey } = await signRes.json()
+
+  // 2. Upload each file directly to Cloudinary
+  const urls: string[] = []
+  for (const file of files) {
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('api_key', apiKey)
+    fd.append('timestamp', String(timestamp))
+    fd.append('signature', signature)
+    fd.append('folder', folder)
+
+    const uploadRes = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: 'POST', body: fd }
+    )
+    if (!uploadRes.ok) throw new Error('Cloudinary upload failed')
+    const result = await uploadRes.json()
+    urls.push(result.secure_url)
+  }
+  return urls
+}
+
+/**
+ * Client wrapper for painting forms.
+ * Images are uploaded directly to Cloudinary from the browser (bypasses Vercel body size limit),
+ * then only the URLs are sent to the API route.
  */
 export function PaintingForm({
   method = 'POST',
@@ -144,6 +178,7 @@ export function PaintingForm({
   className?: string
 }) {
   const [pending, setPending] = useState(false)
+  const [status, setStatus] = useState('')
   const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
 
@@ -154,6 +189,33 @@ export function PaintingForm({
     const fd = new FormData(form)
     setPending(true)
     try {
+      // Extract image files from form data
+      const imageFiles = (fd.getAll('images') as File[]).filter(f => f && f.size > 0)
+
+      // Validate file sizes client-side
+      for (const f of imageFiles) {
+        if (f.size > 5 * 1024 * 1024) {
+          toast.error(`Image "${f.name}" dépasse 5 MB`)
+          setPending(false)
+          return
+        }
+      }
+
+      // Upload images directly to Cloudinary
+      let imageUrls: string[] = []
+      if (imageFiles.length > 0) {
+        setStatus(`Upload des images (0/${imageFiles.length})…`)
+        imageUrls = await uploadFilesToCloudinary(imageFiles)
+        setStatus('')
+      }
+
+      // Remove file entries from form data, add Cloudinary URLs instead
+      fd.delete('images')
+      for (const url of imageUrls) {
+        fd.append('imageUrls', url)
+      }
+
+      // Send form data (text fields + image URLs only) to our API
       const res = await fetch('/api/admin/paintings', {
         method,
         body: fd,
@@ -162,8 +224,6 @@ export function PaintingForm({
       if (!res.ok) {
         toast.error(
           data.error === 'invalid' ? 'Données invalides' :
-          data.error === 'file-too-large' ? 'Image > 5MB' :
-          data.error === 'payload-too-large' ? 'Taille totale des images trop grande' :
           data.error === 'unauthorized' ? 'Non autorisé' :
           'Erreur inattendue'
         )
@@ -176,17 +236,19 @@ export function PaintingForm({
         router.refresh()
         form.reset()
       }
-    } catch {
-      toast.error('Erreur réseau')
+    } catch (err) {
+      console.error('PaintingForm error:', err)
+      toast.error('Erreur réseau — vérifiez votre connexion et réessayez')
     } finally {
       setPending(false)
+      setStatus('')
     }
   }
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className={className}>
       {children}
-      {pending && <p className="text-xs text-muted-foreground animate-pulse">Envoi en cours…</p>}
+      {pending && <p className="text-xs text-muted-foreground animate-pulse">{status || 'Envoi en cours…'}</p>}
     </form>
   )
 }

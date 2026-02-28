@@ -58,10 +58,27 @@ function extractPaintingData(formData: FormData) {
 const MAX_FILE_BYTES = 5 * 1024 * 1024
 const MAX_TOTAL_BYTES = 15.5 * 1024 * 1024
 
-async function uploadImages(formData: FormData, paintingId: string, title: string, startPosition: number) {
+/**
+ * Save painting images from either:
+ * - `imageUrls` (pre-uploaded Cloudinary URLs from client-side upload)
+ * - `images` (file uploads, fallback for local dev)
+ */
+async function saveImages(formData: FormData, paintingId: string, title: string, startPosition: number) {
+  let position = startPosition
+
+  // Prefer pre-uploaded Cloudinary URLs (client-side upload)
+  const urls = formData.getAll('imageUrls').map(v => String(v).trim()).filter(Boolean)
+  if (urls.length > 0) {
+    for (const url of urls) {
+      await prisma.paintingImage.create({ data: { paintingId, url, alt: title, position } })
+      position++
+    }
+    return { error: null }
+  }
+
+  // Fallback: handle file uploads server-side (works locally, may fail on Vercel for large files)
   const files = formData.getAll('images') as File[]
   let totalBytes = 0
-  let position = startPosition
   for (const file of files) {
     if (file && file.size > 0) {
       if (file.size > MAX_FILE_BYTES) {
@@ -95,7 +112,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'invalid' }, { status: 400 })
     }
     const created = await prisma.painting.create({ data: parsed.data })
-    const uploadResult = await uploadImages(formData, created.id, parsed.data.title, 0)
+    const uploadResult = await saveImages(formData, created.id, parsed.data.title, 0)
     if (uploadResult.error) {
       return NextResponse.json({ error: uploadResult.error }, { status: 400 })
     }
@@ -124,7 +141,7 @@ export async function PUT(req: NextRequest) {
     }
     const updated = await prisma.painting.update({ where: { id }, data: parsed.data })
     const existingCount = await prisma.paintingImage.count({ where: { paintingId: updated.id } })
-    const uploadResult = await uploadImages(formData, updated.id, parsed.data.title, existingCount)
+    const uploadResult = await saveImages(formData, updated.id, parsed.data.title, existingCount)
     if (uploadResult.error) {
       return NextResponse.json({ error: uploadResult.error }, { status: 400 })
     }
