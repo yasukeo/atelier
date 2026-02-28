@@ -4,6 +4,8 @@ import dynamic from 'next/dynamic'
 import type { Painting, Artist, PaintingImage } from '@prisma/client'
 import { t, tObj } from '@/lib/i18n'
 import HeroImagesCarousel from './HeroImagesCarousel.client'
+import { Suspense } from 'react'
+import { HomePaintingsSkeleton } from './paintings/skeletons'
 
 // Lazy import the painting card client component so the homepage server component stays light
 const PaintingCard = dynamic(() => import('./paintings/painting-card'))
@@ -13,10 +15,28 @@ interface PaintingWithRels extends Painting { artist: Artist; images: PaintingIm
 // ISR: cache for 5 min; on revalidation failure Next.js keeps serving stale content
 export const revalidate = 300
 
-export default async function Home() {
-  // Session no longer needed here since auth actions are only in the global top bar.
-  // const session = await getServerSession(authOptions)
+/* ─── Async data fetcher: streams in via Suspense ─── */
+async function FeaturedPaintings() {
+  const paintings = await prisma.painting.findMany({
+    where: { available: true },
+    include: { artist: true, images: { orderBy: { position: 'asc' } } },
+    orderBy: { createdAt: 'desc' },
+    take: 6,
+  }) as PaintingWithRels[]
 
+  if (paintings.length === 0) {
+    return <p className="text-sm text-[#8B7355]">{t('home.featured.none')}</p>
+  }
+  return (
+    <div className="grid gap-4 sm:gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {paintings.map((p, i) => (
+        <PaintingCard key={p.id} painting={p as PaintingWithRels} priority={i < 4} />
+      ))}
+    </div>
+  )
+}
+
+async function HeroSection() {
   const paintings = await prisma.painting.findMany({
     where: { available: true },
     include: { artist: true, images: { orderBy: { position: 'asc' } } },
@@ -25,30 +45,59 @@ export default async function Home() {
   }) as PaintingWithRels[]
 
   return (
+    <section className="relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-[#E9E7DB] via-[#FDFCFA] to-[#E9E7DB] pointer-events-none" />
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 sm:pb-14 flex flex-col gap-8 lg:flex-row lg:items-center">
+        <div className="flex-1 max-w-2xl text-center lg:text-left">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#6B2D2D]">
+            {t('home.hero.title')}
+          </h1>
+          <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-[#8B7355] leading-relaxed">
+            {t('home.hero.description')}
+          </p>
+          <div className="mt-6 sm:mt-8">
+            <Link href="/paintings" className="inline-flex items-center justify-center rounded-full border border-[#D8D5C8] px-6 h-11 text-sm font-medium bg-[#6B2D2D] text-white hover:bg-[#5A2525] transition">
+              {t('home.hero.ctaGallery')}
+            </Link>
+            <p className="mt-3 text-xs text-[#8B7355]">{t('home.hero.prompt')}</p>
+          </div>
+        </div>
+        {paintings.length > 0 && (
+          <HeroImagesCarousel paintings={paintings as PaintingWithRels[]} />
+        )}
+      </div>
+    </section>
+  )
+}
+
+export default function Home() {
+  return (
     <div className="min-h-screen flex flex-col">
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#E9E7DB] via-[#FDFCFA] to-[#E9E7DB] pointer-events-none" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 sm:pb-14 flex flex-col gap-8 lg:flex-row lg:items-center">
-          <div className="flex-1 max-w-2xl text-center lg:text-left">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#6B2D2D]">
-              {t('home.hero.title')}
-            </h1>
-            <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-[#8B7355] leading-relaxed">
-              {t('home.hero.description')}
-            </p>
-            <div className="mt-6 sm:mt-8">
-              <Link href="/paintings" className="inline-flex items-center justify-center rounded-full border border-[#D8D5C8] px-6 h-11 text-sm font-medium bg-[#6B2D2D] text-white hover:bg-[#5A2525] transition">
-                {t('home.hero.ctaGallery')}
-              </Link>
-              <p className="mt-3 text-xs text-[#8B7355]">{t('home.hero.prompt')}</p>
+      <Suspense fallback={
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#E9E7DB] via-[#FDFCFA] to-[#E9E7DB] pointer-events-none" />
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 sm:pb-14 flex flex-col gap-8 lg:flex-row lg:items-center">
+            <div className="flex-1 max-w-2xl text-center lg:text-left">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#6B2D2D]">
+                {t('home.hero.title')}
+              </h1>
+              <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-[#8B7355] leading-relaxed">
+                {t('home.hero.description')}
+              </p>
+              <div className="mt-6 sm:mt-8">
+                <Link href="/paintings" className="inline-flex items-center justify-center rounded-full border border-[#D8D5C8] px-6 h-11 text-sm font-medium bg-[#6B2D2D] text-white hover:bg-[#5A2525] transition">
+                  {t('home.hero.ctaGallery')}
+                </Link>
+                <p className="mt-3 text-xs text-[#8B7355]">{t('home.hero.prompt')}</p>
+              </div>
             </div>
+            <div className="flex-1 max-w-md aspect-[4/5] bg-[#E5E2D8] rounded-xl animate-pulse" />
           </div>
-          {paintings.length > 0 && (
-            <HeroImagesCarousel paintings={paintings as PaintingWithRels[]} />
-          )}
-        </div>
-      </section>
+        </section>
+      }>
+        <HeroSection />
+      </Suspense>
 
       {/* Featured paintings */}
       <section className="py-10 sm:py-14 border-t border-[#DCD9CC] bg-[#F7F5F0]">
@@ -57,15 +106,9 @@ export default async function Home() {
             <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#2D2A26]">{t('home.featured.title')}</h2>
             <Link href="/paintings" className="text-sm text-[#8B7355] hover:text-[#6B2D2D] hover:underline">{t('home.featured.all')}</Link>
           </div>
-          {paintings.length === 0 ? (
-            <p className="text-sm text-[#8B7355]">{t('home.featured.none')}</p>
-          ) : (
-            <div className="grid gap-4 sm:gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {paintings.map(p => (
-                <PaintingCard key={p.id} painting={p as PaintingWithRels} />
-              ))}
-            </div>
-          )}
+          <Suspense fallback={<HomePaintingsSkeleton />}>
+            <FeaturedPaintings />
+          </Suspense>
         </div>
       </section>
 

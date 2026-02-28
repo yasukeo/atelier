@@ -107,8 +107,19 @@ function Lightbox({ images, startIndex, painting, onClose }: {
   )
 }
 
+/* ─── Cloudinary blur placeholder helper ─── */
+function cloudinaryBlurUrl(url: string): string {
+  // Transform Cloudinary URL to a tiny blurred version for placeholder
+  // e.g. .../upload/v123/... → .../upload/w_40,e_blur:200,q_auto:low/v123/...
+  try {
+    return url.replace('/upload/', '/upload/w_40,e_blur:200,q_auto:low/')
+  } catch {
+    return url
+  }
+}
+
 /* ─── Painting Card ─── */
-export default function PaintingCard({ painting }: { painting: PaintingWithRels }) {
+export default function PaintingCard({ painting, priority = false }: { painting: PaintingWithRels; priority?: boolean }) {
   const { images } = painting
   const [index, setIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -170,7 +181,11 @@ export default function PaintingCard({ painting }: { painting: PaintingWithRels 
             alt={current.alt || painting.title}
             fill
             sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 25vw"
-            className="object-cover" />
+            className="object-cover"
+            priority={priority}
+            placeholder="blur"
+            blurDataURL={cloudinaryBlurUrl(current.url)}
+          />
         )}
         {total > 1 && (
           <>

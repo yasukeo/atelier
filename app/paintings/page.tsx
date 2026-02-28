@@ -4,15 +4,17 @@ import PaintingCard from './painting-card'
 import { Filters } from './Filters.client'
 import { parsePaintingFilters } from '@/lib/painting-filters'
 import { Prisma } from '@prisma/client'
+import { Suspense } from 'react'
+import { PaintingGridSkeleton } from './skeletons'
 
 // ISR: cache for 1 min; on revalidation failure Next.js keeps serving stale content
 export const revalidate = 60
 
-export default async function PaintingsGalleryPage({ searchParams }: { searchParams: Promise<Record<string,string|undefined>> }) {
-  const resolvedParams = await searchParams
-  const filters = parsePaintingFilters(resolvedParams)
+/* ─── Inner async component: streams in after data fetches ─── */
+async function PaintingResults({ searchParams }: { searchParams: Record<string,string|undefined> }) {
+  const filters = parsePaintingFilters(searchParams)
   const where: Prisma.PaintingWhereInput = {
-    available: true, // Only show available paintings
+    available: true,
   }
   if (filters.artist) where.artistId = filters.artist
   if (filters.style) where.styleId = filters.style
@@ -41,18 +43,36 @@ export default async function PaintingsGalleryPage({ searchParams }: { searchPar
       { artist: { name: { contains: q } } },
     ]
   }
-  // NOTE: color palette future filter placeholder (filters.colors)
-  const [paintings, artists, styles, techniques] = await Promise.all([
-    prisma.painting.findMany({
-      where,
-      include: { artist: true, images: { orderBy: { position: 'asc' } } },
-      orderBy: { createdAt: 'desc' },
-      take: 60,
-    }),
+  const paintings = await prisma.painting.findMany({
+    where,
+    include: { artist: true, images: { orderBy: { position: 'asc' } } },
+    orderBy: { createdAt: 'desc' },
+    take: 60,
+  })
+  if (paintings.length === 0) {
+    return <p className="text-muted-foreground mb-4">Aucune peinture trouvée avec ces filtres.</p>
+  }
+  return (
+    <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {paintings.map((p, i) => (
+        <PaintingCard key={p.id} painting={p} priority={i < 4} />
+      ))}
+    </div>
+  )
+}
+
+/* ─── Filter sidebar data loader ─── */
+async function FilterSidebar() {
+  const [artists, styles, techniques] = await Promise.all([
     prisma.artist.findMany({ orderBy: { name: 'asc' }, take: 200, select: { id: true, name: true } }),
     prisma.style.findMany({ orderBy: { name: 'asc' }, take: 200, select: { id: true, name: true } }),
     prisma.technique.findMany({ orderBy: { name: 'asc' }, take: 200, select: { id: true, name: true } }),
   ])
+  return <Filters artists={artists} styles={styles} techniques={techniques} />
+}
+
+export default async function PaintingsGalleryPage({ searchParams }: { searchParams: Promise<Record<string,string|undefined>> }) {
+  const resolvedParams = await searchParams
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 sm:py-10">
       <div className="flex items-baseline justify-between mb-6 sm:mb-8 gap-4 flex-wrap">
@@ -61,17 +81,21 @@ export default async function PaintingsGalleryPage({ searchParams }: { searchPar
       </div>
       <div className="grid lg:grid-cols-[260px_1fr] gap-6 lg:gap-10 items-start">
         <aside className="lg:sticky top-20 h-max border border-[#D8D5C8] rounded-md p-4 bg-[#F7F5F0]">
-          <Filters artists={artists} styles={styles} techniques={techniques} />
+          <Suspense fallback={
+            <div className="space-y-4 animate-pulse">
+              <div className="h-5 bg-[#E5E2D8] rounded w-20" />
+              <div className="h-9 bg-[#E5E2D8] rounded" />
+              <div className="h-5 bg-[#E5E2D8] rounded w-16" />
+              <div className="h-9 bg-[#E5E2D8] rounded" />
+            </div>
+          }>
+            <FilterSidebar />
+          </Suspense>
         </aside>
         <div>
-          {paintings.length === 0 && (
-            <p className="text-muted-foreground mb-4">Aucune peinture trouvée avec ces filtres.</p>
-          )}
-          <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {paintings.map(p => (
-              <PaintingCard key={p.id} painting={p} />
-            ))}
-          </div>
+          <Suspense fallback={<PaintingGridSkeleton count={8} />}>
+            <PaintingResults searchParams={resolvedParams} />
+          </Suspense>
         </div>
       </div>
     </div>
