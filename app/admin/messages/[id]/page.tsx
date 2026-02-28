@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/db'
 import { notFound } from 'next/navigation'
-import { markRead } from './actions'
 import { DeleteMessageButton } from '../DeleteMessageButton.client'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -15,8 +14,9 @@ export default async function AdminMessageDetail({ params }: { params: Promise<{
   if (!message) return notFound()
 
   if (!message.readAt) {
-    // Fire and forget mark as read (can't call action directly in server component without await side effects)
-    markRead(message.id)
+    // Mark as read directly (no revalidatePath needed — page is force-dynamic)
+    await prisma.contactMessage.update({ where: { id }, data: { readAt: new Date() } })
+    message.readAt = new Date()
   }
 
   return (
