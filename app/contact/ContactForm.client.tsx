@@ -25,6 +25,7 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
           const res = await submitContact(fd)
           if (!res.ok) {
             if ('fieldErrors' in res) setErrors(res.fieldErrors || {})
+            else if (res.error === 'RATE_LIMITED') toast.error('Trop de messages envoyés. Réessaie dans une heure.')
             else toast.error('Envoi impossible, réessaie plus tard.')
             return
           }

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { hashToken } from '@/lib/tokens'
+import { clearEvents } from '@/lib/rate-limit'
 
 const schema = z.object({
   token: z.string().min(1).max(200),
@@ -52,17 +53,20 @@ export async function resetPassword(formData: FormData) {
       where: { id: resetToken.id, usedAt: null, expiresAt: { gt: new Date() } },
       data: { usedAt: new Date() },
     })
-    if (claim.count !== 1) return false
-    await tx.user.update({
+    if (claim.count !== 1) return null
+    return tx.user.update({
       where: { id: resetToken.userId },
       data: { passwordHash: hashedPassword },
+      select: { email: true },
     })
-    return true
   })
 
   if (!consumed) {
     redirect('/reset-password?error=used')
   }
+
+  // The owner proved access to the mailbox: lift any brute-force lock on the account
+  await clearEvents(`login:email:${consumed.email}`)
 
   redirect('/signin?success=password-reset')
 }

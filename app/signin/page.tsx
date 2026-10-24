@@ -50,6 +50,7 @@ function SignInContent() {
       if (e === 'exists') setError('Un compte existe déjà avec cet email.')
       else if (e === 'validation') setError(registerValidationMessage(params.get('fields')))
       else if (e === 'invalid') setError('Informations invalides.')
+      else if (e === 'rate-limited') setError('Trop de comptes créés depuis cette connexion. Réessayez dans une heure.')
       else setError('Une erreur est survenue. Veuillez réessayer.')
     } else if (params.get('success')) {
       const s = params.get('success')
@@ -64,7 +65,8 @@ function SignInContent() {
     e.preventDefault()
     setError(null); setSuccess(null)
     const res = await signIn('credentials', { email, password, redirect: false })
-    if (res?.error) setError(t('auth.signIn.error', fr))
+    if (res?.error === 'TooManyAttempts') setError('Trop de tentatives de connexion. Réessayez dans 15 minutes ou réinitialisez votre mot de passe.')
+    else if (res?.error) setError(t('auth.signIn.error', fr))
     else window.location.href = callbackUrl
   }
 

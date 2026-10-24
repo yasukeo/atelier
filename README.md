@@ -56,7 +56,7 @@ Visit http://localhost:3000 to browse the storefront and http://localhost:3000/a
 | `npm run lint` | ESLint across the project |
 | `npm run test` | Vitest unit/component suites |
 | `npm run e2e` | Playwright end-to-end smoke tests (expects a running dev server) |
-| `npm run build` | Production build with Turbopack |
+| `npm run build` | Production build |
 
 ## Deployment
 
@@ -67,6 +67,16 @@ The app is deployed on **Vercel** with automatic deploys from the `main` branch.
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 
 Painting images are uploaded directly from the browser to Cloudinary (signed uploads) to bypass Vercel's 4.5 MB body size limit.
+
+### Database migrations
+
+The Vercel build does **not** run migrations. When a change adds a folder under `prisma/migrations`, apply it to the production database (with `DATABASE_URL`/`DIRECT_URL` pointing to Supabase):
+
+```bash
+npx prisma migrate deploy
+```
+
+Rate limiting (login, password reset, registration, contact form) relies on the `RateLimitEvent` table from the `rate_limit_events` migration. Until it is applied the app keeps working but rate limiting is disabled (an error is logged once per instance).
 
 ## Launching locally
 

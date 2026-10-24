@@ -4,6 +4,8 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { redirect } from 'next/navigation'
 import { safeCallbackUrl } from '@/lib/format'
+import { headers } from 'next/headers'
+import { RATE_LIMITS, clientIp, isRateLimited, recordEvent } from '@/lib/rate-limit'
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, 'Nom trop court (min 2 caractères)').max(80),
@@ -28,6 +30,12 @@ export async function registerUser(formData: FormData) {
   }
   const { name, email, password } = parsed.data
 
+  // Limits mass account creation from one IP
+  const ipKey = `register:ip:${clientIp(await headers())}`
+  if (await isRateLimited(ipKey, RATE_LIMITS.registerPerIp)) {
+    redirect(`/signin?tab=register&error=rate-limited${keep}`)
+  }
+
   // Check for existing user first (before any redirect that could throw)
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
@@ -38,6 +46,7 @@ export async function registerUser(formData: FormData) {
   try {
     const passwordHash = await bcrypt.hash(password, 10)
     await prisma.user.create({ data: { name, email, passwordHash } })
+    await recordEvent(ipKey)
   } catch (err) {
     // Prisma unique constraint error (P2002) means email already exists
     if (typeof err === 'object' && err !== null && 'code' in err && (err as { code: string }).code === 'P2002') {
