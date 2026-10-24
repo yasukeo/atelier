@@ -22,9 +22,9 @@ export async function registerUser(formData: FormData) {
   const keep = callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : ''
   const parsed = registerSchema.safeParse(raw)
   if (!parsed.success) {
-    // Build a descriptive error from Zod issues
-    const msg = parsed.error.issues.map(i => i.message).join(', ')
-    redirect(`/signin?tab=register&error=validation&msg=${encodeURIComponent(msg)}${keep}`)
+    // Pass the invalid field names; the page turns them into messages
+    const fields = [...new Set(parsed.error.issues.map(i => String(i.path[0])))].join(',')
+    redirect(`/signin?tab=register&error=validation&fields=${encodeURIComponent(fields)}${keep}`)
   }
   const { name, email, password } = parsed.data
 

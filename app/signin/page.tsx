@@ -11,6 +11,18 @@ import Image from 'next/image'
 import { EyeIcon, EyeOffIcon } from '@/components/icons'
 import { safeCallbackUrl } from '@/lib/format'
 
+const registerFieldMessages: Record<string, string> = {
+  name: 'Nom invalide (2 à 80 caractères)',
+  email: 'Email invalide',
+  password: 'Mot de passe invalide (6 à 100 caractères)',
+}
+
+// Built from known field codes only, so a crafted link can't display arbitrary text
+function registerValidationMessage(fields: string | null) {
+  const messages = (fields ?? '').split(',').map(f => registerFieldMessages[f]).filter(Boolean)
+  return messages.length ? messages.join(', ') : 'Informations invalides.'
+}
+
 export default function SignInPage() {
   return <Suspense><SignInContent /></Suspense>
 }
@@ -34,10 +46,9 @@ function SignInContent() {
 
   useEffect(() => {
     const e = params.get('error')
-    const msg = params.get('msg')
     if (e) {
       if (e === 'exists') setError('Un compte existe déjà avec cet email.')
-      else if (e === 'validation' && msg) setError(msg)
+      else if (e === 'validation') setError(registerValidationMessage(params.get('fields')))
       else if (e === 'invalid') setError('Informations invalides.')
       else setError('Une erreur est survenue. Veuillez réessayer.')
     } else if (params.get('success')) {

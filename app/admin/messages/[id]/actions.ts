@@ -2,15 +2,13 @@
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { requireAdmin } from '@/lib/admin'
 
 export async function deleteMessage(id: string) {
-  await prisma.contactMessage.delete({ where: { id } })
+  // Server actions are reachable by anyone who knows their ID: the /admin middleware doesn't protect them
+  await requireAdmin()
+  if (typeof id !== 'string' || !id) return
+  await prisma.contactMessage.deleteMany({ where: { id } })
   revalidatePath('/admin/messages')
   redirect('/admin/messages')
-}
-
-export async function markRead(id: string) {
-  await prisma.contactMessage.update({ where: { id }, data: { readAt: new Date() } })
-  revalidatePath(`/admin/messages/${id}`)
-  revalidatePath('/admin/messages')
 }

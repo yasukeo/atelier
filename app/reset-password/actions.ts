@@ -3,33 +3,31 @@ import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { hashToken } from '@/lib/tokens'
 
 const schema = z.object({
-  token: z.string().min(1),
-  password: z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères'),
+  token: z.string().min(1).max(200),
+  password: z.string().min(6).max(100),
 })
 
 export async function resetPassword(formData: FormData) {
   const token = String(formData.get('token') || '')
   const password = String(formData.get('password') || '')
   const confirmPassword = String(formData.get('confirmPassword') || '')
+  const tokenParam = encodeURIComponent(token)
 
   // Validate passwords match
   if (password !== confirmPassword) {
-    redirect(`/reset-password?token=${token}&error=mismatch`)
+    redirect(`/reset-password?token=${tokenParam}&error=mismatch`)
   }
 
   const parsed = schema.safeParse({ token, password })
   if (!parsed.success) {
-    const errorMsg = parsed.error.issues[0]?.message || 'invalid'
-    redirect(`/reset-password?token=${token}&error=${encodeURIComponent(errorMsg)}`)
+    redirect(`/reset-password?token=${tokenParam}&error=invalid-password`)
   }
 
   // Find the token
-  const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token },
-    include: { user: true },
-  })
+  const resetToken = await prisma.passwordResetToken.findUnique({ where: { token: hashToken(token) } })
 
   if (!resetToken) {
     redirect('/reset-password?error=invalid-token')
@@ -48,17 +46,23 @@ export async function resetPassword(formData: FormData) {
   // Hash the new password
   const hashedPassword = await bcrypt.hash(password, 12)
 
-  // Update user password and mark token as used
-  await prisma.$transaction([
-    prisma.user.update({
+  // Consume the token atomically: if two requests race with the same link, only one changes the password
+  const consumed = await prisma.$transaction(async (tx) => {
+    const claim = await tx.passwordResetToken.updateMany({
+      where: { id: resetToken.id, usedAt: null, expiresAt: { gt: new Date() } },
+      data: { usedAt: new Date() },
+    })
+    if (claim.count !== 1) return false
+    await tx.user.update({
       where: { id: resetToken.userId },
       data: { passwordHash: hashedPassword },
-    }),
-    prisma.passwordResetToken.update({
-      where: { id: resetToken.id },
-      data: { usedAt: new Date() },
-    }),
-  ])
+    })
+    return true
+  })
+
+  if (!consumed) {
+    redirect('/reset-password?error=used')
+  }
 
   redirect('/signin?success=password-reset')
 }

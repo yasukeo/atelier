@@ -1,7 +1,7 @@
 "use server"
 import { prisma } from '@/lib/db'
 import { redirect } from 'next/navigation'
-import { randomBytes } from 'crypto'
+import { generateToken, hashToken } from '@/lib/tokens'
 import { z } from 'zod'
 import { sendPasswordResetEmail } from '@/lib/email'
 
@@ -18,9 +18,10 @@ export async function requestPasswordReset(formData: FormData) {
   // Invalidate previous unused tokens (optional cleanup)
   await prisma.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } })
 
-  const token = randomBytes(32).toString('hex')
+  const token = generateToken()
   const expiresAt = new Date(Date.now() + 1000 * 60 * 30) // 30 minutes
-  await prisma.passwordResetToken.create({ data: { userId: user.id, token, expiresAt } })
+  // Only the hash is stored; the plain token goes in the email link
+  await prisma.passwordResetToken.create({ data: { userId: user.id, token: hashToken(token), expiresAt } })
 
   // Send password reset email via Resend
   try {
