@@ -7,13 +7,12 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
+import type { CartSummary } from '@/lib/cart'
+import { formatMAD } from '@/lib/format'
 
-interface CartLine { key: string; paintingId: string; title: string; imageUrl: string | null; widthCm?: number; heightCm?: number; unitPriceMAD: number; quantity: number; lineTotalMAD: number }
-interface CartSummary { items: CartLine[]; subtotalMAD: number; discountPercent?: number; discountAmountMAD?: number; totalMAD: number }
+interface CheckoutClientProps { initialSummary: CartSummary; initialDiscountCode?: string; defaultName?: string; defaultEmail?: string }
 
-interface CheckoutClientProps { initialSummary: CartSummary; initialDiscountCode?: string }
-
-export default function CheckoutClient({ initialSummary, initialDiscountCode }: CheckoutClientProps) {
+export default function CheckoutClient({ initialSummary, initialDiscountCode, defaultName, defaultEmail }: CheckoutClientProps) {
   const [summary, setSummary] = useState<CartSummary>(initialSummary)
   const [discountCode, setDiscountCode] = useState(initialDiscountCode || '')
   const [discountStatus, setDiscountStatus] = useState<'idle'|'valid'|'invalid'|'checking'>(initialDiscountCode && initialSummary.discountPercent ? 'valid' : 'idle')
@@ -39,8 +38,6 @@ export default function CheckoutClient({ initialSummary, initialDiscountCode }: 
     }
   }
 
-  function formatMAD(v: number) { return new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v) }
-
   return (
     <div className="min-h-screen bg-[#F7F5F0]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
@@ -64,8 +61,11 @@ export default function CheckoutClient({ initialSummary, initialDiscountCode }: 
                     } else if (result.error === 'EMPTY_CART') {
                       toast.error('Panier vide')
                       router.push('/cart')
+                    } else if (result.error === 'UNAVAILABLE') {
+                      toast.error("Une œuvre de votre panier vient d'être vendue")
+                      router.push('/cart')
                     } else if (result.error === 'AUTH_REQUIRED') {
-                      router.push('/signin')
+                      router.push('/signin?callbackUrl=%2Fcheckout')
                     } else {
                       toast.error('Erreur lors de la commande')
                     }
@@ -78,34 +78,34 @@ export default function CheckoutClient({ initialSummary, initialDiscountCode }: 
               className="space-y-5"
             >
               <div>
-                <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Nom complet</label>
-                <Input name="name" required minLength={2} className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
+                <label htmlFor="checkout-name" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Nom complet</label>
+                <Input id="checkout-name" name="name" autoComplete="name" defaultValue={defaultName} required minLength={2} className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
                 {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name[0]}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Email</label>
-                <Input type="email" name="email" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
+                <label htmlFor="checkout-email" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Email</label>
+                <Input type="email" id="checkout-email" name="email" autoComplete="email" defaultValue={defaultEmail} required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
                 {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email[0]}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Téléphone</label>
-                <Input name="phone" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
+                <label htmlFor="checkout-phone" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Téléphone</label>
+                <Input id="checkout-phone" name="phone" type="tel" autoComplete="tel" placeholder="06 12 34 56 78" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
                 {errors.phone && <p className="text-sm text-red-600 mt-1">{errors.phone[0]}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Adresse</label>
-                <Input name="address" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
+                <label htmlFor="checkout-address" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Adresse</label>
+                <Input id="checkout-address" name="address" autoComplete="street-address" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
                 {errors.address && <p className="text-sm text-red-600 mt-1">{errors.address[0]}</p>}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Ville</label>
-                  <Input name="city" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
+                  <label htmlFor="checkout-city" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Ville</label>
+                  <Input id="checkout-city" name="city" autoComplete="address-level2" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
                   {errors.city && <p className="text-sm text-red-600 mt-1">{errors.city[0]}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Code postal</label>
-                  <Input name="postalCode" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
+                  <label htmlFor="checkout-postalCode" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Code postal</label>
+                  <Input id="checkout-postalCode" name="postalCode" autoComplete="postal-code" inputMode="numeric" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
                   {errors.postalCode && <p className="text-sm text-red-600 mt-1">{errors.postalCode[0]}</p>}
                 </div>
               </div>

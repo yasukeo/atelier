@@ -4,9 +4,11 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { mergeGuestCartIntoUser } from '@/lib/cart'
 import { prisma } from '@/lib/db'
+import { RATE_LIMITS, clearEvents, clientIp, isRateLimited, recordEvent } from '@/lib/rate-limit'
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  // Registration stores emails lowercased, so normalize here too
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(6),
 })
 
@@ -17,14 +19,28 @@ export const authOptions: NextAuthOptions = {
   providers: [
     Credentials({
       name: 'Credentials',
-      async authorize(raw) {
+      async authorize(raw, req) {
         const parsed = credentialsSchema.safeParse(raw)
         if (!parsed.success) return null
         const { email, password } = parsed.data
+
+        // Brute-force protection: failed attempts are counted per account and per IP
+        const emailKey = `login:email:${email}`
+        const ipKey = `login:ip:${clientIp(req?.headers)}`
+        const [emailLimited, ipLimited] = await Promise.all([
+          isRateLimited(emailKey, RATE_LIMITS.loginPerEmail),
+          isRateLimited(ipKey, RATE_LIMITS.loginPerIp),
+        ])
+        // The message reaches the sign-in page as res.error
+        if (emailLimited || ipLimited) throw new Error('TooManyAttempts')
+
         const user = await prisma.user.findUnique({ where: { email } })
-        if (!user) return null
-        const ok = await bcrypt.compare(password, user.passwordHash)
-        if (!ok) return null
+        const ok = user ? await bcrypt.compare(password, user.passwordHash) : false
+        if (!user || !ok) {
+          await recordEvent(emailKey, ipKey)
+          return null
+        }
+        await clearEvents(emailKey)
         return { id: user.id, email: user.email, name: user.name ?? undefined, role: user.role as Role }
       },
       credentials: {

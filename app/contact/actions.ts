@@ -2,6 +2,8 @@
 import { z } from 'zod'
 import { sendContactNotification } from '@/lib/email'
 import { prisma } from '@/lib/db'
+import { headers } from 'next/headers'
+import { RATE_LIMITS, clientIp, isRateLimited, recordEvent } from '@/lib/rate-limit'
 
 const contactSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -33,6 +35,11 @@ export async function submitContact(formData: FormData) {
   // Spam check
   if (parsed.data.honey) return { ok: true as const, ignored: true as const }
 
+  const ipKey = `contact:ip:${clientIp(await headers())}`
+  if (await isRateLimited(ipKey, RATE_LIMITS.contactPerIp)) {
+    return { ok: false as const, error: 'RATE_LIMITED' as const }
+  }
+
   try {
     const { name, email, subject, message, phone } = parsed.data
     // Persist message
@@ -45,6 +52,7 @@ export async function submitContact(formData: FormData) {
         phone: phone || undefined,
       },
     })
+    await recordEvent(ipKey)
 
     // Notify via email (best-effort; failure doesn't remove stored message)
     try {

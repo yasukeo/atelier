@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { v2 as cloudinary } from 'cloudinary'
+import { isCloudinaryConfigured } from '@/lib/media'
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -19,6 +20,10 @@ export async function GET() {
     const role = (session?.user as { role?: string } | undefined)?.role
     if (role !== 'ADMIN') {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+    // Lets the admin form fall back to server-side uploads (local filesystem in dev)
+    if (!isCloudinaryConfigured()) {
+      return NextResponse.json({ error: 'not_configured' }, { status: 503 })
     }
 
     const timestamp = Math.round(Date.now() / 1000)

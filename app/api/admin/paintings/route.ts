@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { storeImage } from '@/lib/media'
 import { z } from 'zod'
-import { revalidatePath } from 'next/cache'
+import { revalidatePaintingPages } from '@/lib/paintings'
 
 const enums = {
   kinds: ['UNIQUE', 'RECREATABLE'] as const,
@@ -113,10 +113,10 @@ export async function POST(req: NextRequest) {
     }
     const created = await prisma.painting.create({ data: parsed.data })
     const uploadResult = await saveImages(formData, created.id, parsed.data.title, 0)
+    revalidatePaintingPages(created.id)
     if (uploadResult.error) {
       return NextResponse.json({ error: uploadResult.error }, { status: 400 })
     }
-    revalidatePath('/admin/paintings')
     return NextResponse.json({ success: 'created' })
   } catch (e) {
     console.error('createPainting API error:', e)
@@ -142,10 +142,10 @@ export async function PUT(req: NextRequest) {
     const updated = await prisma.painting.update({ where: { id }, data: parsed.data })
     const existingCount = await prisma.paintingImage.count({ where: { paintingId: updated.id } })
     const uploadResult = await saveImages(formData, updated.id, parsed.data.title, existingCount)
+    revalidatePaintingPages(updated.id)
     if (uploadResult.error) {
       return NextResponse.json({ error: uploadResult.error }, { status: 400 })
     }
-    revalidatePath('/admin/paintings')
     return NextResponse.json({ success: 'updated' })
   } catch (e) {
     console.error('updatePainting API error:', e)

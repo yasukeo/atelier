@@ -36,7 +36,10 @@ export default async function AdminOrdersPage() {
           <tbody>
             {orders.map(o => (
               <tr key={o.id} className="border-t hover:bg-muted/40">
-                <td className="px-3 py-2 whitespace-nowrap align-top">{o.createdAt.toLocaleDateString('fr-MA', { day:'2-digit', month:'2-digit', year:'numeric' })}</td>
+                <td className="px-3 py-2 whitespace-nowrap align-top">
+                  {o.createdAt.toLocaleDateString('fr-MA', { day:'2-digit', month:'2-digit', year:'numeric' })}
+                  <div className="text-[11px] font-mono text-muted-foreground">#{o.id.slice(-8).toUpperCase()}</div>
+                </td>
                 <td className="px-3 py-2 align-top">
                   <div className="font-medium">{o.customer.email}</div>
                   <div className="text-[11px] text-muted-foreground">{o.phone}</div>

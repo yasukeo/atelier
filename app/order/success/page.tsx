@@ -2,10 +2,16 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import type { Metadata } from 'next'
+import { formatMAD } from '@/lib/format'
+
+export const metadata: Metadata = {
+  title: 'Commande confirmée',
+  robots: { index: false, follow: false },
+}
 
 export const dynamic = 'force-dynamic'
-
-function formatMAD(v: number) { return new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v) }
 
 export default async function OrderSuccessPage({ searchParams }: { searchParams: Promise<Record<string,string|undefined>> }) {
   const resolvedParams = await searchParams
@@ -19,7 +25,8 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
   if (!order) notFound()
 
   const discountPercent = order.discountCode?.percent ?? undefined
-  const discountAmount = discountPercent ? Math.floor((order.totalMAD + (order.discountCode ? Math.floor((order.totalMAD * discountPercent) / (100 - discountPercent)) : 0) - order.totalMAD)) : 0 // fallback simple
+  const subtotal = order.items.reduce((s, i) => s + i.unitPriceMAD * i.quantity, 0)
+  const discountAmount = Math.max(0, subtotal + order.shippingFeeMAD - order.totalMAD)
 
   return (
     <div className="min-h-screen bg-[#F7F5F0]">
@@ -36,7 +43,7 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
             Merci pour votre achat !
           </p>
           <p className="text-xs text-[#8B7355] mt-1">
-            Référence: <span className="font-mono bg-[#E9E7DB] px-2 py-0.5 rounded">{order.id}</span>
+            Référence: <span className="font-mono bg-[#E9E7DB] px-2 py-0.5 rounded">#{order.id.slice(-8).toUpperCase()}</span>
           </p>
         </div>
 
@@ -49,7 +56,7 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
               {order.items.map(it => (
                 <div key={it.id} className="flex justify-between items-start gap-3 text-sm">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[#2D2A26] font-medium truncate">{it.painting.title}</p>
+                    <Link href={`/paintings/${it.paintingId}`} className="block text-[#2D2A26] font-medium truncate hover:text-[#6B2D2D]">{it.painting.title}</Link>
                     <p className="text-xs text-[#8B7355]">
                       {it.widthCm && it.heightCm ? `${it.widthCm}×${it.heightCm}cm · ` : ''}
                       Qté: {it.quantity}
@@ -65,7 +72,7 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
           <div className="border-t border-[#E9E7DB] bg-[#FDFCFA] p-4 sm:p-6 space-y-2">
             <div className="flex justify-between text-sm text-[#8B7355]">
               <span>Sous-total</span>
-              <span>{formatMAD(order.items.reduce((s,i)=> s + i.unitPriceMAD * i.quantity,0))}</span>
+              <span>{formatMAD(subtotal)}</span>
             </div>
             {discountPercent && (
               <div className="flex justify-between text-sm text-green-600">
@@ -78,7 +85,7 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
               <span className="text-green-600">Gratuite</span>
             </div>
             <div className="flex justify-between font-semibold text-[#2D2A26] border-t border-[#D8D5C8] pt-3 mt-3">
-              <span>Total payé</span>
+              <span>Total</span>
               <span className="text-lg text-[#6B2D2D]">{formatMAD(order.totalMAD)}</span>
             </div>
           </div>
@@ -86,18 +93,18 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
 
         {/* Actions */}
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <a 
+          <Link 
             href="/orders" 
             className="inline-flex items-center justify-center h-11 px-6 rounded-full border border-[#D8D5C8] bg-white text-sm font-medium text-[#6B2D2D] hover:bg-[#E9E7DB] transition-colors"
           >
             Voir mes commandes
-          </a>
-          <a 
+          </Link>
+          <Link 
             href="/paintings" 
             className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-[#6B2D2D] text-sm font-medium text-white hover:bg-[#5A2525] transition-colors"
           >
             Continuer les achats
-          </a>
+          </Link>
         </div>
 
         {/* Info Box */}

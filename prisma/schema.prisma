@@ -234,3 +234,13 @@ model ContactMessage {
   createdAt DateTime @default(now())
   readAt    DateTime?
 }
+
+// One row per counted event (failed login, reset request, contact message), keyed e.g. "login:email:x@y.z"
+model RateLimitEvent {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+  @@index([createdAt])
+}

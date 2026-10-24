@@ -22,9 +22,11 @@ function ResetPasswordContent() {
     'expired': 'Ce lien a expiré. Veuillez demander un nouveau lien.',
     'used': 'Ce lien a déjà été utilisé.',
     'mismatch': 'Les mots de passe ne correspondent pas.',
+    'invalid-password': 'Le mot de passe doit contenir entre 6 et 100 caractères.',
   }
 
-  const displayError = error ? (errorMessages[error] || error) : null
+  // Only known codes are shown, so a crafted link can't display arbitrary text
+  const displayError = error ? (errorMessages[error] || 'Une erreur est survenue.') : null
 
   // No token provided
   if (!token && !error) {
@@ -101,7 +103,10 @@ function ResetPasswordContent() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 required
+                minLength={6}
+                maxLength={100}
                 placeholder="Minimum 6 caractères"
                 className="bg-[#FDFCFA] border-[#DCD9CC]"
               />
@@ -115,7 +120,10 @@ function ResetPasswordContent() {
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 required
+                minLength={6}
+                maxLength={100}
                 placeholder="Répétez le mot de passe"
                 className="bg-[#FDFCFA] border-[#DCD9CC]"
               />

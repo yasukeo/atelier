@@ -2,16 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { AuthActions } from '@/components/AuthActions'
 import Link from 'next/link'
 import CartButton from '@/components/CartButton'
 import Image from 'next/image'
 import { InstagramIcon, FacebookIcon, TikTokIcon } from '@/components/icons'
-import type { Session } from 'next-auth'
-import { MobileNav } from '@/components/MobileNav'
-import { Suspense } from 'react'
+import { FooterAccountLinks, HeaderAccount, OrdersNavLink, Providers } from '@/components/SessionNav'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -79,16 +74,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  let session: Session | null = null
-  try {
-    session = await getServerSession(authOptions)
-  } catch {
-    // Graceful fallback: show page as logged-out rather than crashing
-  }
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#F7F5F0]`}>        
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#F7F5F0]`}>
+        <Providers>
         <header className="sticky top-0 z-50 w-full border-b border-[#DCD9CC] bg-[#F7F5F0]/95 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
             {/* Logo */}
@@ -99,26 +89,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6 text-sm text-[#8B7355]">
-              <a href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</a>
-              <a href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</a>
-              <a href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</a>
-              {session?.user && (
-                <a href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</a>
-              )}
+              <Link href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</Link>
+              <Link href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</Link>
+              <Link href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</Link>
+              <OrdersNavLink />
             </nav>
             
             {/* Right Actions */}
             <div className="flex items-center gap-3">
               <CartButton />
-              <div className="hidden md:flex">
-                <Suspense>
-                  <AuthActions session={(session?.user as { email?: string; role?: string }) ?? null} variant="bar" />
-                </Suspense>
-              </div>
-              {/* Mobile Menu */}
-              <Suspense>
-                <MobileNav session={(session?.user as { email?: string; role?: string }) ?? null} />
-              </Suspense>
+              {/* Desktop auth actions + mobile menu */}
+              <HeaderAccount />
             </div>
           </div>
         </header>
@@ -132,18 +113,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               
               {/* Main Navigation */}
               <nav className="flex items-center gap-4 sm:gap-6 text-sm text-[#8B7355]">
-                <a href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</a>
-                <a href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</a>
-                <a href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</a>
+                <Link href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</Link>
+                <Link href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</Link>
+                <Link href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</Link>
               </nav>
 
               {/* Account Links */}
-              {session?.user && (
-                <nav className="flex items-center gap-4 sm:gap-6 text-sm text-[#8B7355]">
-                  <a href="/profile" className="hover:text-[#6B2D2D] transition-colors">Mon profil</a>
-                  <a href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</a>
-                </nav>
-              )}
+              <FooterAccountLinks />
               
               {/* Social Links */}
               <div className="flex items-center gap-5">
@@ -160,10 +136,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               
               {/* Policy Links - Grid on mobile for better readability */}
               <nav className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-3 sm:gap-4 text-xs text-[#8B7355] text-center">
-                <a href="/privacy" className="hover:text-[#6B2D2D] transition-colors py-1">Confidentialité</a>
-                <a href="/refund" className="hover:text-[#6B2D2D] transition-colors py-1">Remboursement</a>
-                <a href="/terms" className="hover:text-[#6B2D2D] transition-colors py-1">Conditions</a>
-                <a href="/shipping" className="hover:text-[#6B2D2D] transition-colors py-1">Expédition</a>
+                <Link href="/privacy" className="hover:text-[#6B2D2D] transition-colors py-1">Confidentialité</Link>
+                <Link href="/refund" className="hover:text-[#6B2D2D] transition-colors py-1">Remboursement</Link>
+                <Link href="/terms" className="hover:text-[#6B2D2D] transition-colors py-1">Conditions</Link>
+                <Link href="/shipping" className="hover:text-[#6B2D2D] transition-colors py-1">Expédition</Link>
               </nav>
               
               {/* Copyright */}
@@ -172,6 +148,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </footer>
         <Toaster richColors closeButton position="top-right" />
+        </Providers>
       </body>
     </html>
   )

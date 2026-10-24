@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+export const PAINTING_SORTS = ['recent', 'price-asc', 'price-desc'] as const
+export type PaintingSort = (typeof PAINTING_SORTS)[number]
+
 // Price stored as priceMAD (Int)
 export const paintingFilterSchema = z.object({
   q: z.string().trim().min(1).max(100).optional(),
@@ -13,6 +16,7 @@ export const paintingFilterSchema = z.object({
   minHeight: z.coerce.number().int().min(1).max(1000).optional(),
   maxHeight: z.coerce.number().int().min(1).max(1000).optional(),
   kind: z.enum(['UNIQUE','RECREATABLE']).optional(),
+  sort: z.enum(PAINTING_SORTS).optional(),
   // Future color palette filter placeholder
   colors: z.string().optional(),
 }).refine(d => !d.minPrice || !d.maxPrice || d.minPrice <= d.maxPrice, { message: 'minPrice > maxPrice', path: ['minPrice'] })

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db'
+import { formatMAD } from '@/lib/format'
 import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
@@ -116,7 +117,7 @@ async function RecentOrders() {
           <tbody>
             {orders.map(o => (
               <tr key={o.id} className="border-t">
-                <td className="p-2 font-mono text-xs">{o.id.slice(0,8)}</td>
+                <td className="p-2 font-mono text-xs"><a href={`/admin/orders/${o.id}`} className="underline underline-offset-2">#{o.id.slice(-8).toUpperCase()}</a></td>
                 <td className="p-2">{o.createdAt.toLocaleDateString()}</td>
                 <td className="p-2 font-medium">{formatMAD(o.totalMAD)}</td>
                 <td className="p-2">{o.items.length}</td>
@@ -142,6 +143,3 @@ function renderStatusBadge(status: string) {
   return <span className={`${base} ${map[status] || 'bg-muted text-muted-foreground border-muted'}`}>{status.replaceAll('_',' ')}</span>
 }
 
-function formatMAD(v: number) {
-  return new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v)
-}

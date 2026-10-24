@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { signOut } from 'next-auth/react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle } from '@/components/ui/sheet'
@@ -99,14 +100,14 @@ export function MobileNav({ session }: Props) {
             {session?.email ? (
               <div className="space-y-3">
                 <p className="text-xs text-[#8B7355] text-center truncate">{session.email}</p>
-                <SheetClose asChild>
-                  <Link
-                    href="/api/auth/signout"
-                    className="block w-full text-center px-4 py-2.5 rounded-full border border-[#D8D5C8] text-sm font-medium text-[#6B2D2D] hover:bg-[#E9E7DB] transition-colors"
-                  >
-                    Se déconnecter
-                  </Link>
-                </SheetClose>
+                {/* Sign out directly instead of NextAuth's unstyled English confirmation page */}
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); signOut({ callbackUrl: '/' }) }}
+                  className="block w-full text-center px-4 py-2.5 rounded-full border border-[#D8D5C8] text-sm font-medium text-[#6B2D2D] hover:bg-[#E9E7DB] transition-colors"
+                >
+                  Se déconnecter
+                </button>
               </div>
             ) : (
               <SheetClose asChild>

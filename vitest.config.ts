@@ -1,13 +1,15 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
-import react from "@vitejs/plugin-react-swc";
 
 export default defineConfig({
-  plugins: [react()],
+  // esbuild handles JSX (tsconfig uses "preserve" for Next.js, so force the automatic runtime)
+  esbuild: { jsx: "automatic" },
   test: {
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
+    // Playwright specs live in e2e/ and run via `npm run e2e`
+    exclude: ["node_modules/**", "e2e/**", ".next/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

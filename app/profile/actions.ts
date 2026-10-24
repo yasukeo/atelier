@@ -12,11 +12,16 @@ export async function updateProfile(data: { name: string }) {
     return { ok: false, error: 'Non authentifié' }
   }
 
+  const name = typeof data?.name === 'string' ? data.name.trim() : ''
+  if (name.length > 80) {
+    return { ok: false, error: 'Nom trop long (max 80 caractères)' }
+  }
+
   try {
     await prisma.user.update({
       where: { email: session.user.email },
       data: {
-        name: data.name || null,
+        name: name || null,
       }
     })
 
@@ -34,6 +39,15 @@ export async function changePassword(data: { currentPassword: string; newPasswor
     return { ok: false, error: 'Non authentifié' }
   }
 
+  // Same rules as registration: the client-side check alone can be bypassed
+  const { currentPassword, newPassword } = data ?? {}
+  if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+    return { ok: false, error: 'Requête invalide' }
+  }
+  if (newPassword.length < 6 || newPassword.length > 100) {
+    return { ok: false, error: 'Le nouveau mot de passe doit contenir entre 6 et 100 caractères' }
+  }
+
   try {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
@@ -45,13 +59,13 @@ export async function changePassword(data: { currentPassword: string; newPasswor
     }
 
     // Verify current password
-    const isValid = await bcrypt.compare(data.currentPassword, user.passwordHash)
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash)
     if (!isValid) {
       return { ok: false, error: 'Mot de passe actuel incorrect' }
     }
 
     // Hash new password
-    const newHash = await bcrypt.hash(data.newPassword, 10)
+    const newHash = await bcrypt.hash(newPassword, 10)
 
     await prisma.user.update({
       where: { id: user.id },

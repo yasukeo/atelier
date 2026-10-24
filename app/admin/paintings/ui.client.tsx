@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 export default function ClientEnhancements({ success, error }: { success: string | null; error: string | null }) {
   useEffect(() => {
     if (success) {
-      const msg = success === 'created' ? 'Œuvre créée' : success === 'updated' ? 'Œuvre mise à jour' : success === 'deleted' ? 'Œuvre supprimée' : success === 'image-removed' ? 'Image supprimée' : 'Succès'
+      const msg = success === 'created' ? 'Œuvre créée' : success === 'updated' ? 'Œuvre mise à jour' : success === 'deleted' ? 'Œuvre supprimée' : success === 'image-removed' ? 'Image supprimée' : success === 'option-saved' ? 'Format enregistré' : success === 'option-removed' ? 'Format supprimé' : 'Succès'
       toast.success(msg)
     }
   }, [success])
@@ -132,13 +132,15 @@ export function MultiImageDrop({ name, max = 8 }: MultiImageDropProps) {
 
 /**
  * Upload files directly from the browser to Cloudinary using a signed request.
- * Returns an array of Cloudinary secure URLs.
+ * Returns an array of Cloudinary secure URLs, or null when Cloudinary isn't configured
+ * (the files are then sent to our API, which stores them locally).
  */
-async function uploadFilesToCloudinary(files: File[]): Promise<string[]> {
+async function uploadFilesToCloudinary(files: File[]): Promise<string[] | null> {
   if (files.length === 0) return []
 
   // 1. Get a signed upload token from our API
   const signRes = await fetch('/api/admin/cloudinary-sign')
+  if (signRes.status === 503) return null
   if (!signRes.ok) throw new Error('Failed to get upload signature')
   const { signature, timestamp, folder, cloudName, apiKey } = await signRes.json()
 
@@ -202,17 +204,19 @@ export function PaintingForm({
       }
 
       // Upload images directly to Cloudinary
-      let imageUrls: string[] = []
+      let imageUrls: string[] | null = []
       if (imageFiles.length > 0) {
-        setStatus(`Upload des images (0/${imageFiles.length})…`)
+        setStatus(`Upload des images (${imageFiles.length})…`)
         imageUrls = await uploadFilesToCloudinary(imageFiles)
         setStatus('')
       }
 
-      // Remove file entries from form data, add Cloudinary URLs instead
-      fd.delete('images')
-      for (const url of imageUrls) {
-        fd.append('imageUrls', url)
+      // Replace file entries with Cloudinary URLs (keep the files when Cloudinary is unavailable)
+      if (imageUrls) {
+        fd.delete('images')
+        for (const url of imageUrls) {
+          fd.append('imageUrls', url)
+        }
       }
 
       // Send form data (text fields + image URLs only) to our API
@@ -225,6 +229,8 @@ export function PaintingForm({
         toast.error(
           data.error === 'invalid' ? 'Données invalides' :
           data.error === 'unauthorized' ? 'Non autorisé' :
+          data.error === 'file-too-large' ? 'Image > 5 MB' :
+          data.error === 'payload-too-large' ? 'Taille totale des images trop grande' :
           'Erreur inattendue'
         )
       } else {
