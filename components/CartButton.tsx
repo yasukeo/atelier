@@ -6,20 +6,20 @@ import { ShoppingCartIcon } from './icons'
 export default function CartButton() {
   const [count, setCount] = useState<number | null>(null)
 
-  async function load() {
-    try {
-      const res = await fetch('/api/cart-count', { cache: 'no-store' })
-      if (!res.ok) return
-      const json = await res.json()
-      setCount(json.count)
-    } catch {/* ignore */}
-  }
-
   useEffect(() => {
+    let active = true
+    const load = () => {
+      fetch('/api/cart-count', { cache: 'no-store' })
+        .then(res => (res.ok ? res.json() : null))
+        .then(json => { if (active && json) setCount(json.count) })
+        .catch(() => {/* ignore */})
+    }
     load()
-    const handler = () => load()
-    window.addEventListener('cart:changed', handler)
-    return () => window.removeEventListener('cart:changed', handler)
+    window.addEventListener('cart:changed', load)
+    return () => {
+      active = false
+      window.removeEventListener('cart:changed', load)
+    }
   }, [])
 
   return (

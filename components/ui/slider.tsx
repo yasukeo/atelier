@@ -19,7 +19,12 @@ export interface RangeSliderProps extends Omit<React.ComponentPropsWithoutRef<ty
 export function RangeSlider({ className, label, format = v => v.toString(), withInputs=false, minStepsBetweenThumbs=0, value, min=0, max=100, step=1, onValueChange, onValueCommit, ...props }: RangeSliderProps) {
   const [values, setValues] = React.useState<number[]>(value || [min, max])
 
-  React.useEffect(() => { setValues(value) }, [value])
+  // Follow the controlled value when the parent changes it (e.g. filters reset), adjusting state during render instead of in an effect
+  const [syncedValue, setSyncedValue] = React.useState<number[]>(value)
+  if (value[0] !== syncedValue[0] || value[1] !== syncedValue[1]) {
+    setSyncedValue(value)
+    setValues(value)
+  }
 
   return (
     <div className={cn('w-full', className)}>

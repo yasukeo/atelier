@@ -6,7 +6,7 @@ Modern e-commerce storefront for curated art pieces, built on the Next.js App Ro
 
 ## Tech stack
 
-- **Next.js 15.5** (App Router) + **React 19** with Server & Client Components
+- **Next.js 16** (App Router) + **React 19** with Server & Client Components
 - **TypeScript**, ESLint 9, and Turbopack builds
 - **Tailwind CSS v4** with custom UI primitives in `components/ui`
 - **Prisma 6** ORM targeting **PostgreSQL** (Supabase) with seeds in `prisma/seed.mjs`
