@@ -9,6 +9,7 @@ import { registerUser } from './actions'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { EyeIcon, EyeOffIcon } from '@/components/icons'
+import { safeCallbackUrl } from '@/lib/format'
 
 export default function SignInPage() {
   return <Suspense><SignInContent /></Suspense>
@@ -16,6 +17,8 @@ export default function SignInPage() {
 
 function SignInContent() {
   const params = useSearchParams()
+  const callbackUrl = safeCallbackUrl(params.get('callbackUrl'))
+  const fromCheckout = callbackUrl.startsWith('/checkout')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [regName, setRegName] = useState('')
@@ -51,7 +54,7 @@ function SignInContent() {
     setError(null); setSuccess(null)
     const res = await signIn('credentials', { email, password, redirect: false })
     if (res?.error) setError(t('auth.signIn.error', fr))
-    else window.location.href = '/'
+    else window.location.href = callbackUrl
   }
 
   function onRegister(e: FormEvent) {
@@ -65,6 +68,7 @@ function SignInContent() {
     fd.set('name', regName)
     fd.set('email', regEmail)
     fd.set('password', regPassword)
+    fd.set('callbackUrl', callbackUrl)
     startTransition(async () => {
       await registerUser(fd)
     })
@@ -77,11 +81,15 @@ function SignInContent() {
           <div className="mb-6 text-center space-y-3">
             <Image src="/logos/Plan de travail 11.png" alt="Elwarcha الورشة" width={130} height={100} className="mx-auto object-contain" />
             <h1 className="text-2xl font-semibold tracking-tight text-[#6B2D2D]">Bienvenue</h1>
-            <p className="text-sm text-[#8B7355]">Connectez-vous ou créez un compte pour continuer.</p>
+            <p className="text-sm text-[#8B7355]">
+              {fromCheckout
+                ? 'Connectez-vous ou créez un compte pour finaliser votre commande. Votre panier est conservé.'
+                : 'Connectez-vous ou créez un compte pour continuer.'}
+            </p>
           </div>
           {error && <div className="mb-4 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
           {success && <div className="mb-4 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded p-2">{success}</div>}
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs defaultValue={params.get('tab') === 'register' ? 'register' : 'login'} className="w-full">
             <TabsList className="grid grid-cols-2 mb-6">
               <TabsTrigger value="login">{t('auth.signIn.title', fr)}</TabsTrigger>
               <TabsTrigger value="register">Créer un compte</TabsTrigger>

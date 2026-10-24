@@ -1,9 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import * as discounts from '../lib/discounts'
+
+// validateDiscount calls getResolvedDiscount internally, so spying on the module export
+// can't intercept it: mock the Prisma client instead.
+const findUnique = vi.fn()
+vi.mock('@/lib/db', () => ({ prisma: { discountCode: { findUnique: (...args: unknown[]) => findUnique(...args) } } }))
+
+import * as discounts from '@/lib/discounts'
+
+const day = 24 * 60 * 60 * 1000
+function discountRow(overrides: Partial<{ code: string; percent: number; startsAt: Date | null; endsAt: Date | null }> = {}) {
+  return { id: 'd1', code: 'CODE', percent: 10, startsAt: null, endsAt: null, createdAt: new Date(), updatedAt: new Date(), orders: [], ...overrides }
+}
 
 describe('Discount logic', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
+    findUnique.mockReset()
   })
 
   it('resolves ACTIVE status', () => {
@@ -24,33 +35,33 @@ describe('Discount logic', () => {
   })
 
   it('validateDiscount returns NOT_FOUND for missing code', async () => {
-    vi.spyOn(discounts, 'getResolvedDiscount').mockResolvedValue(null)
+    findUnique.mockResolvedValue(null)
     const result = await discounts.validateDiscount('NOPE')
     expect(result).toEqual({ valid: false, reason: 'NOT_FOUND' })
   })
 
-  it('validateDiscount returns correct status for expired', async () => {
-    vi.spyOn(discounts, 'getResolvedDiscount').mockResolvedValue({
-      id: '1', code: 'EXPIRED', percent: 10, startsAt: null, endsAt: null, status: 'EXPIRED', usageCount: 0, appliedPercent: 0
-    })
+  it('looks codes up uppercased', async () => {
+    findUnique.mockResolvedValue(null)
+    await discounts.validateDiscount('bienvenue10')
+    expect(findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { code: 'BIENVENUE10' } }))
+  })
+
+  it('validateDiscount rejects expired codes', async () => {
+    findUnique.mockResolvedValue(discountRow({ code: 'EXPIRED', endsAt: new Date(Date.now() - day) }))
     const result = await discounts.validateDiscount('EXPIRED')
     expect(result.valid).toBe(false)
     expect(result.reason).toBe('EXPIRED')
   })
 
-  it('validateDiscount returns correct status for future', async () => {
-    vi.spyOn(discounts, 'getResolvedDiscount').mockResolvedValue({
-      id: '2', code: 'FUTURE', percent: 10, startsAt: null, endsAt: null, status: 'FUTURE', usageCount: 0, appliedPercent: 0
-    })
+  it('validateDiscount rejects codes that have not started', async () => {
+    findUnique.mockResolvedValue(discountRow({ code: 'FUTURE', startsAt: new Date(Date.now() + day) }))
     const result = await discounts.validateDiscount('FUTURE')
     expect(result.valid).toBe(false)
     expect(result.reason).toBe('FUTURE')
   })
 
-  it('validateDiscount returns valid for ACTIVE', async () => {
-    vi.spyOn(discounts, 'getResolvedDiscount').mockResolvedValue({
-      id: '3', code: 'ACTIVE', percent: 20, startsAt: null, endsAt: null, status: 'ACTIVE', usageCount: 0, appliedPercent: 20
-    })
+  it('validateDiscount returns the percent for ACTIVE codes', async () => {
+    findUnique.mockResolvedValue(discountRow({ code: 'ACTIVE', percent: 20 }))
     const result = await discounts.validateDiscount('ACTIVE')
     expect(result.valid).toBe(true)
     expect(result.percent).toBe(20)

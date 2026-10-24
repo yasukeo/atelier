@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 
 interface FieldErrors { [k: string]: string[] }
 
-export function ContactForm() {
+export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [pending, start] = useTransition()
   const [sent, setSent] = useState(false)
@@ -59,7 +59,7 @@ export function ContactForm() {
         </div>
         <div>
           <label className="block text-xs font-medium mb-1">Sujet *</label>
-          <Input name="subject" required minLength={3} maxLength={120} aria-invalid={!!errors.subject} />
+          <Input name="subject" defaultValue={defaultSubject} required minLength={3} maxLength={120} aria-invalid={!!errors.subject} />
           {errors.subject && <p className="mt-1 text-xs text-red-600">{errors.subject[0]}</p>}
         </div>
       </div>
@@ -77,14 +77,14 @@ export function ContactForm() {
   )
 }
 
-export function ContactCard() {
+export function ContactCard({ defaultSubject }: { defaultSubject?: string }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Envoyer un message</CardTitle>
       </CardHeader>
       <CardContent>
-        <ContactForm />
+        <ContactForm defaultSubject={defaultSubject} />
       </CardContent>
     </Card>
   )

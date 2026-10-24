@@ -1,12 +1,11 @@
-import { prisma } from "@/lib/db";
 import Link from "next/link";
 import dynamic from 'next/dynamic'
 import type { Metadata } from 'next'
-import type { Painting, Artist, PaintingImage } from '@prisma/client'
 import { t, tObj } from '@/lib/i18n'
 import HeroImagesCarousel from './HeroImagesCarousel.client'
 import { Suspense } from 'react'
 import { HomePaintingsSkeleton } from './paintings/skeletons'
+import { getLatestPaintings } from '@/lib/paintings'
 
 // Lazy import the painting card client component so the homepage server component stays light
 const PaintingCard = dynamic(() => import('./paintings/painting-card'))
@@ -50,19 +49,12 @@ const orgJsonLd = {
   ],
 }
 
-interface PaintingWithRels extends Painting { artist: Artist; images: PaintingImage[] }
-
 // ISR: cache for 5 min; on revalidation failure Next.js keeps serving stale content
 export const revalidate = 300
 
 /* ─── Async data fetcher: streams in via Suspense ─── */
 async function FeaturedPaintings() {
-  const paintings = await prisma.painting.findMany({
-    where: { available: true },
-    include: { artist: true, images: { orderBy: { position: 'asc' } } },
-    orderBy: { createdAt: 'desc' },
-    take: 6,
-  }) as PaintingWithRels[]
+  const paintings = await getLatestPaintings()
 
   if (paintings.length === 0) {
     return <p className="text-sm text-[#8B7355]">{t('home.featured.none')}</p>
@@ -70,19 +62,15 @@ async function FeaturedPaintings() {
   return (
     <div className="grid gap-4 sm:gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {paintings.map((p, i) => (
-        <PaintingCard key={p.id} painting={p as PaintingWithRels} priority={i < 4} />
+        <PaintingCard key={p.id} painting={p} priority={i < 4} />
       ))}
     </div>
   )
 }
 
 async function HeroSection() {
-  const paintings = await prisma.painting.findMany({
-    where: { available: true },
-    include: { artist: true, images: { orderBy: { position: 'asc' } } },
-    orderBy: { createdAt: 'desc' },
-    take: 6,
-  }) as PaintingWithRels[]
+  // Same cached query as FeaturedPaintings: only one DB round-trip per render
+  const paintings = await getLatestPaintings()
 
   return (
     <section className="relative overflow-hidden">
@@ -103,7 +91,7 @@ async function HeroSection() {
           </div>
         </div>
         {paintings.length > 0 && (
-          <HeroImagesCarousel paintings={paintings as PaintingWithRels[]} />
+          <HeroImagesCarousel paintings={paintings} />
         )}
       </div>
     </section>

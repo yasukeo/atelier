@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { sendOrderStatusUpdate } from '@/lib/email'
+import { revalidatePaintingPages } from '@/lib/paintings'
 
 const updateStatusSchema = z.object({ orderId: z.string().cuid(), status: z.enum(['PENDING_REVIEW','IN_PROGRESS','READY_FOR_DELIVERY','COMPLETED','CANCELED']) })
 
@@ -20,11 +21,31 @@ export async function updateOrderStatusAction(formData: FormData) {
   // Fetch customer info for email
   const customer = await prisma.user.findUnique({ where: { id: order.customerId }, select: { email: true, name: true } })
   
+  const items = await prisma.orderItem.findMany({ where: { orderId: order.id, painting: { kind: 'UNIQUE' } }, select: { paintingId: true } })
+  const uniqueIds = [...new Set(items.map(i => i.paintingId))]
+  const canceling = parsed.data.status === 'CANCELED'
+  const reopening = order.status === 'CANCELED' && !canceling
+
   const updated = await prisma.$transaction(async (tx) => {
     const o = await tx.order.update({ where: { id: order.id }, data: { status: parsed.data.status } })
     await tx.orderStatusHistory.create({ data: { orderId: order.id, status: parsed.data.status, note: 'Mise à jour admin' } })
+    if (uniqueIds.length && canceling) {
+      // Put cancelled originals back on sale, unless another active order holds them
+      const heldElsewhere = await tx.orderItem.findMany({
+        where: { paintingId: { in: uniqueIds }, orderId: { not: order.id }, order: { status: { not: 'CANCELED' } } },
+        select: { paintingId: true },
+      })
+      const held = new Set(heldElsewhere.map(h => h.paintingId))
+      const release = uniqueIds.filter(id => !held.has(id))
+      if (release.length) await tx.painting.updateMany({ where: { id: { in: release } }, data: { available: true } })
+    } else if (uniqueIds.length && reopening) {
+      await tx.painting.updateMany({ where: { id: { in: uniqueIds } }, data: { available: false } })
+    }
     return o
   })
+  if (uniqueIds.length && (canceling || reopening)) {
+    for (const id of uniqueIds) revalidatePaintingPages(id)
+  }
 
   // Send status update email (async, non-blocking)
   if (customer?.email) {

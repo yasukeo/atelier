@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db'
+import { formatMAD } from '@/lib/format'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
@@ -29,9 +30,6 @@ const statusColors: Record<string, string> = {
   CANCELED: 'bg-red-100 text-red-800',
 }
 
-function formatMAD(v: number) {
-  return new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v)
-}
 
 function formatDate(d: Date) {
   return new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(d)
@@ -110,7 +108,7 @@ export default async function OrdersPage() {
                     Commande du {formatDate(order.createdAt)}
                   </p>
                   <p className="text-xs font-mono text-[#8B7355]">
-                    Réf: {order.id}
+                    Réf: #{order.id.slice(-8).toUpperCase()}
                   </p>
                 </div>
                 <span
@@ -145,7 +143,7 @@ export default async function OrdersPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate text-[#2D2A26]">
-                          {item.painting.title}
+                          <Link href={`/paintings/${item.painting.id}`} className="hover:text-[#6B2D2D]">{item.painting.title}</Link>
                         </h3>
                         <p className="text-xs text-[#8B7355] mt-1">
                           {displayWidth} × {displayHeight} cm • Qté: {item.quantity}

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import PaintingCard from './painting-card'
 import { Filters } from './Filters.client'
 import { parsePaintingFilters } from '@/lib/painting-filters'
+import { paintingCardInclude } from '@/lib/paintings'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -49,27 +50,43 @@ async function PaintingResults({ searchParams }: { searchParams: Record<string,s
   }
   if (filters.q) {
     const q = filters.q
+    // Postgres `contains` is case-sensitive by default
     where.OR = [
-      { title: { contains: q } },
-      { description: { contains: q } },
-      { artist: { name: { contains: q } } },
+      { title: { contains: q, mode: 'insensitive' } },
+      { description: { contains: q, mode: 'insensitive' } },
+      { artist: { name: { contains: q, mode: 'insensitive' } } },
     ]
   }
+  const orderBy: Prisma.PaintingOrderByWithRelationInput[] =
+    filters.sort === 'price-asc' ? [{ priceMAD: 'asc' }, { createdAt: 'desc' }]
+    : filters.sort === 'price-desc' ? [{ priceMAD: 'desc' }, { createdAt: 'desc' }]
+    : [{ createdAt: 'desc' }]
   const paintings = await prisma.painting.findMany({
     where,
-    include: { artist: true, images: { orderBy: { position: 'asc' } } },
-    orderBy: { createdAt: 'desc' },
+    include: paintingCardInclude,
+    orderBy,
     take: 60,
   })
   if (paintings.length === 0) {
-    return <p className="text-muted-foreground mb-4">Aucune peinture trouvée avec ces filtres.</p>
+    return (
+      <div className="rounded-xl border border-dashed border-[#D8D5C8] p-10 text-center space-y-3">
+        <p className="text-[#2D2A26] font-medium">Aucune œuvre ne correspond à ces filtres.</p>
+        <p className="text-sm text-[#8B7355]">Essayez d&apos;élargir la fourchette de prix ou de dimensions.</p>
+        <Link href="/paintings" className="inline-block text-sm text-[#6B2D2D] underline underline-offset-4">Réinitialiser les filtres</Link>
+      </div>
+    )
   }
   return (
-    <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {paintings.map((p, i) => (
-        <PaintingCard key={p.id} painting={p} priority={i < 4} />
-      ))}
-    </div>
+    <>
+      <p className="text-xs text-[#8B7355] mb-3 sm:mb-4" aria-live="polite">
+        {paintings.length >= 60 ? '60+ œuvres' : `${paintings.length} œuvre${paintings.length > 1 ? 's' : ''}`}
+      </p>
+      <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {paintings.map((p, i) => (
+          <PaintingCard key={p.id} painting={p} priority={i < 4} />
+        ))}
+      </div>
+    </>
   )
 }
 

@@ -6,7 +6,8 @@ import { mergeGuestCartIntoUser } from '@/lib/cart'
 import { prisma } from '@/lib/db'
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  // Registration stores emails lowercased, so normalize here too
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(6),
 })
 

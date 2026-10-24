@@ -2,16 +2,17 @@
 
 > **Live:** [www.elwarcha.com](https://www.elwarcha.com)
 
-Modern e-commerce storefront for curated art pieces, built on the Next.js App Router with TypeScript, Prisma, and Tailwind CSS. The app bundles a full storefront with painting gallery, shopping cart, checkout pipeline, contact form, and an authenticated admin area for managing paintings, artists, styles, techniques, and discounts.
+Modern e-commerce storefront for curated art pieces, built on the Next.js App Router with TypeScript, Prisma, and Tailwind CSS. The app bundles a full storefront with painting gallery, painting detail pages (format picker for re-creations, related works, Product JSON-LD), shopping cart, checkout pipeline, contact form, and an authenticated admin area for managing paintings, recreation formats, artists, styles, techniques, discounts, orders and messages.
 
 ## Tech stack
 
-- **Next.js 15** (App Router) + **React 19** with Server & Client Components
+- **Next.js 15.5** (App Router) + **React 19** with Server & Client Components
 - **TypeScript**, ESLint 9, and Turbopack builds
 - **Tailwind CSS v4** with custom UI primitives in `components/ui`
 - **Prisma 6** ORM targeting **PostgreSQL** (Supabase) with seeds in `prisma/seed.mjs`
 - **next-auth** for credentials-based authentication (JWT strategy)
 - **Cloudinary** for image storage (direct browser-to-Cloudinary signed uploads)
+- **Resend** for transactional emails (order confirmation, status updates, password reset, contact)
 - **Vercel** for hosting
 - Vitest + Testing Library for unit/component tests, Playwright for e2e
 
@@ -26,12 +27,10 @@ Modern e-commerce storefront for curated art pieces, built on the Next.js App Ro
 ## Prerequisites
 
 - Node.js 20+ and npm 10+
-- PostgreSQL database (or a Supabase project) accessible via `DATABASE_URL`
-- A `.env` file that at minimum defines:
-  - `DATABASE_URL="postgresql://user:pass@host:5432/postgres"`
-  - `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
-  - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
-  - Any mailer keys referenced in `lib/email.ts`
+- PostgreSQL database (or a Supabase project) accessible via `DATABASE_URL` / `DIRECT_URL`
+- A `.env` file: copy `.env.example` and fill it in. Only `DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET` and `NEXTAUTH_URL` are required locally:
+  - without Cloudinary, admin image uploads are stored in `public/paintings/`
+  - without `RESEND_API_KEY`, emails are skipped and logged to the console
 
 ## Setup & development
 
@@ -41,7 +40,8 @@ npm install
 
 # 2. Provision the database
 npx prisma migrate deploy
-npm run prisma:seed   # optional demo content
+npm run prisma:seed        # admin account + styles/techniques
+npm run prisma:seed:demo   # same, plus a demo artist, 6 paintings and the BIENVENUE10 code
 
 # 3. Start the dev server
 npm run dev
@@ -79,6 +79,5 @@ When you are ready for production, build with `npm run build` and start with `np
 ## Troubleshooting
 
 - **Database connection errors** – confirm the `DATABASE_URL` host/port matches your PostgreSQL instance and run `npx prisma migrate dev` to create the schema. The app includes automatic retry logic (3× with exponential backoff) for transient connection failures.
-- **Vitest smoke test failures** – `tests/smoke.test.tsx` renders `app/page.tsx`; if you modify the hero image alt text update the test accordingly.
 - **Playwright "test() called in config" error** – Run `npm run e2e` from the repo root so Playwright uses `playwright.config.ts` instead of trying to evaluate tests during Vitest runs.
 - **Painting upload fails on Vercel** – Ensure Cloudinary env vars are set. Images are uploaded directly from the browser to Cloudinary; only URLs are sent to the API route.

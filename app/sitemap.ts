@@ -1,8 +1,24 @@
 import type { MetadataRoute } from 'next'
+import { prisma } from '@/lib/db'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Regenerated hourly so new paintings get discovered by search engines
+export const revalidate = 3600
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = 'https://www.elwarcha.com'
   const now = new Date()
+
+  let paintings: { id: string; updatedAt: Date; images: { url: string }[] }[] = []
+  try {
+    paintings = await prisma.painting.findMany({
+      where: { available: true },
+      select: { id: true, updatedAt: true, images: { select: { url: true }, orderBy: { position: 'asc' }, take: 1 } },
+      orderBy: { createdAt: 'desc' },
+      take: 5000,
+    })
+  } catch {
+    // DB unreachable: still serve the static pages
+  }
 
   return [
     {
@@ -53,5 +69,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+    ...paintings.map(p => ({
+      url: `${base}/paintings/${p.id}`,
+      lastModified: p.updatedAt,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+      images: p.images.filter(i => i.url.startsWith('http')).map(i => i.url),
+    })),
   ]
 }

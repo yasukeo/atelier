@@ -1,140 +1,9 @@
 "use server"
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
-import { revalidatePath } from 'next/cache'
+import { revalidatePaintingPages } from '@/lib/paintings'
 import { redirect } from 'next/navigation'
 import { requireAdmin } from '@/lib/admin'
-import { storeImage } from '@/lib/media'
-
-const enums = {
-  kinds: ['UNIQUE', 'RECREATABLE'] as const,
-  orientations: ['PORTRAIT', 'PAYSAGE', 'CARRE', 'AUTRE'] as const,
-}
-
-const paintingSchema = z.object({
-  title: z.string().min(1).max(200),
-  description: z.string().max(2000).optional(),
-  kind: z.enum(enums.kinds),
-  priceMAD: z.coerce.number().int().min(0),
-  widthCm: z.coerce.number().int().min(1),
-  heightCm: z.coerce.number().int().min(1),
-  orientation: z.enum(enums.orientations),
-  available: z.boolean().optional(),
-  leadTimeWeeks: z.string().max(50).optional(),
-  artistId: z.string().min(1),
-  styleId: z.string().optional(),
-  techniqueId: z.string().optional(),
-})
-
-function normalizeOptionalId(v: FormDataEntryValue | null): string | undefined {
-  const s = (v == null ? '' : String(v)).trim()
-  return s.length ? s : undefined
-}
-
-export async function createPainting(formData: FormData) {
-  await requireAdmin()
-  const dataRaw = {
-    title: String(formData.get('title') || '').trim(),
-    description: (String(formData.get('description') || '').trim() || undefined),
-    kind: String(formData.get('kind') || ''),
-    priceMAD: formData.get('priceMAD'),
-    widthCm: formData.get('widthCm'),
-    heightCm: formData.get('heightCm'),
-    orientation: String(formData.get('orientation') || ''),
-    available: formData.get('available') != null,
-    leadTimeWeeks: (String(formData.get('leadTimeWeeks') || '').trim() || undefined),
-    artistId: String(formData.get('artistId') || ''),
-    styleId: normalizeOptionalId(formData.get('styleId')),
-    techniqueId: normalizeOptionalId(formData.get('techniqueId')),
-  }
-  const parsed = paintingSchema.safeParse(dataRaw)
-  if (!parsed.success) {
-    redirect('/admin/paintings?error=invalid')
-  }
-  try {
-    const created = await prisma.painting.create({ data: parsed.data })
-    // Support multiple images (input name="images") with size validation
-    const files = formData.getAll('images') as File[]
-    const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5MB per image
-    const MAX_TOTAL_BYTES = 15.5 * 1024 * 1024 // keep a safety margin under 16mb body cap
-    let totalBytes = 0
-    let position = 0
-    for (const file of files) {
-      if (file && file.size > 0) {
-        if (file.size > MAX_FILE_BYTES) {
-          redirect('/admin/paintings?error=file-too-large')
-        }
-        totalBytes += file.size
-        if (totalBytes > MAX_TOTAL_BYTES) {
-          redirect('/admin/paintings?error=payload-too-large')
-        }
-        const arrayBuffer = await file.arrayBuffer()
-        const { url } = await storeImage(Buffer.from(arrayBuffer), file.name)
-        await prisma.paintingImage.create({ data: { paintingId: created.id, url, alt: parsed.data.title, position } })
-        position++
-      }
-    }
-    revalidatePath('/admin/paintings')
-  } catch (e) {
-    console.error('createPainting error:', e)
-    redirect('/admin/paintings?error=unknown')
-  }
-  redirect('/admin/paintings?success=created')
-}
-
-export async function updatePainting(formData: FormData) {
-  await requireAdmin()
-  const id = String(formData.get('id') || '')
-  const dataRaw = {
-    title: String(formData.get('title') || '').trim(),
-    description: (String(formData.get('description') || '').trim() || undefined),
-    kind: String(formData.get('kind') || ''),
-    priceMAD: formData.get('priceMAD'),
-    widthCm: formData.get('widthCm'),
-    heightCm: formData.get('heightCm'),
-    orientation: String(formData.get('orientation') || ''),
-    available: formData.get('available') != null,
-    leadTimeWeeks: (String(formData.get('leadTimeWeeks') || '').trim() || undefined),
-    artistId: String(formData.get('artistId') || ''),
-    styleId: normalizeOptionalId(formData.get('styleId')),
-    techniqueId: normalizeOptionalId(formData.get('techniqueId')),
-  }
-  const parsed = paintingSchema.safeParse(dataRaw)
-  if (!parsed.success || !id) {
-    redirect('/admin/paintings?error=invalid')
-  }
-  try {
-    const updated = await prisma.painting.update({ where: { id }, data: parsed.data })
-    const newFiles = formData.getAll('images') as File[]
-    if (newFiles.length) {
-      const existingCount = await prisma.paintingImage.count({ where: { paintingId: updated.id } })
-      let position = existingCount
-      const MAX_FILE_BYTES = 5 * 1024 * 1024
-      const MAX_TOTAL_BYTES = 15.5 * 1024 * 1024
-      let totalBytes = 0
-      for (const file of newFiles) {
-        if (file && file.size > 0) {
-          if (file.size > MAX_FILE_BYTES) {
-            redirect('/admin/paintings?error=file-too-large')
-          }
-          totalBytes += file.size
-          if (totalBytes > MAX_TOTAL_BYTES) {
-            redirect('/admin/paintings?error=payload-too-large')
-          }
-          const arrayBuffer = await file.arrayBuffer()
-          const { url } = await storeImage(Buffer.from(arrayBuffer), file.name)
-          await prisma.paintingImage.create({ data: { paintingId: updated.id, url, alt: parsed.data.title, position } })
-          position++
-        }
-      }
-    }
-    revalidatePath('/admin/paintings')
-  } catch (e) {
-    console.error('updatePainting error:', e)
-    redirect('/admin/paintings?error=unknown')
-  }
-  redirect('/admin/paintings?success=updated')
-}
 
 export async function deletePainting(formData: FormData) {
   await requireAdmin()
@@ -150,11 +19,12 @@ export async function deletePainting(formData: FormData) {
   try {
     // Delete related cart items first
     await prisma.cartItem.deleteMany({ where: { paintingId: id } })
-    // Delete related images
+    // Delete related images and recreation formats (no cascade on these relations)
     await prisma.paintingImage.deleteMany({ where: { paintingId: id } })
+    await prisma.paintingRecreationOption.deleteMany({ where: { paintingId: id } })
     // Now delete the painting
     await prisma.painting.delete({ where: { id } })
-    revalidatePath('/admin/paintings')
+    revalidatePaintingPages(id)
   } catch (e) {
     console.error('deletePainting error:', e)
     redirect('/admin/paintings?error=linked')
@@ -175,9 +45,56 @@ export async function deletePaintingImage(formData: FormData) {
         await prisma.paintingImage.update({ where: { id: remaining[i].id }, data: { position: i } })
       }
     }
-    revalidatePath('/admin/paintings')
-    redirect('/admin/paintings?success=image-removed')
+    revalidatePaintingPages(img.paintingId)
   } catch {
     redirect('/admin/paintings?error=unknown')
   }
+  // Outside try/catch: redirect() works by throwing, which the catch above would swallow
+  redirect('/admin/paintings?success=image-removed')
+}
+
+const recreationOptionSchema = z.object({
+  paintingId: z.string().min(1),
+  widthCm: z.coerce.number().int().min(1).max(1000),
+  heightCm: z.coerce.number().int().min(1).max(1000),
+  priceMAD: z.coerce.number().int().min(0).max(10_000_000),
+})
+
+export async function addRecreationOption(formData: FormData) {
+  await requireAdmin()
+  const parsed = recreationOptionSchema.safeParse({
+    paintingId: formData.get('paintingId'),
+    widthCm: formData.get('widthCm'),
+    heightCm: formData.get('heightCm'),
+    priceMAD: formData.get('priceMAD'),
+  })
+  if (!parsed.success) redirect('/admin/paintings?error=invalid')
+  const { paintingId, widthCm, heightCm, priceMAD } = parsed.data
+  try {
+    // Same size twice just updates the price
+    await prisma.paintingRecreationOption.upsert({
+      where: { paintingId_widthCm_heightCm: { paintingId, widthCm, heightCm } },
+      update: { priceMAD },
+      create: { paintingId, widthCm, heightCm, priceMAD },
+    })
+    revalidatePaintingPages(paintingId)
+  } catch (e) {
+    console.error('addRecreationOption error:', e)
+    redirect('/admin/paintings?error=unknown')
+  }
+  redirect('/admin/paintings?success=option-saved')
+}
+
+export async function deleteRecreationOption(formData: FormData) {
+  await requireAdmin()
+  const id = String(formData.get('id') || '')
+  if (!id) redirect('/admin/paintings?error=invalid')
+  try {
+    const opt = await prisma.paintingRecreationOption.delete({ where: { id } })
+    revalidatePaintingPages(opt.paintingId)
+  } catch (e) {
+    console.error('deleteRecreationOption error:', e)
+    redirect('/admin/paintings?error=unknown')
+  }
+  redirect('/admin/paintings?success=option-removed')
 }

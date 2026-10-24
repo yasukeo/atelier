@@ -41,7 +41,8 @@ async function writeGuestCart(items: CookieCartItem[]) {
     store.delete(CART_COOKIE)
     return
   }
-  store.set(CART_COOKIE, JSON.stringify(items), { path: '/', httpOnly: false })
+  // Persist the guest cart for 30 days instead of the browser session
+  store.set(CART_COOKIE, JSON.stringify(items), { path: '/', httpOnly: true, sameSite: 'lax', maxAge: 60 * 60 * 24 * 30 })
 }
 
 export interface CartLine {
@@ -54,6 +55,8 @@ export interface CartLine {
   unitPriceMAD: number
   quantity: number
   lineTotalMAD: number
+  available: boolean // false once a UNIQUE piece is sold or the painting is hidden
+  isUnique: boolean // UNIQUE originals are capped at quantity 1
 }
 
 export interface CartSummary {
@@ -62,84 +65,81 @@ export interface CartSummary {
   discountPercent?: number
   discountAmountMAD?: number
   totalMAD: number
+  hasUnavailable: boolean
 }
 
 function lineKey(p: { paintingId: string; widthCm?: number; heightCm?: number }) {
   return [p.paintingId, p.widthCm ?? '-', p.heightCm ?? '-'].join('|')
 }
 
+type RawCartItem = { paintingId: string; widthCm?: number; heightCm?: number; quantity: number }
+
 export async function getCart(discountPercent?: number): Promise<CartSummary> {
   const session = await getServerSession(authOptions)
-  let cartItems: { paintingId: string; widthCm?: number | null; heightCm?: number | null; quantity: number; unitPriceMAD: number }[] = []
+  let rawItems: RawCartItem[] = []
 
   if (session?.user?.email) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true } })
     if (user) {
-      const dbItems = await prisma.cartItem.findMany({ where: { userId: user.id }, include: { painting: { include: { images: true, recreationOptions: true } } }, orderBy: { createdAt: 'asc' } })
-      cartItems = dbItems.map(ci => ({
+      const dbItems = await prisma.cartItem.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'asc' } })
+      rawItems = dbItems.map(ci => ({
         paintingId: ci.paintingId,
         widthCm: ci.widthCm ?? undefined,
         heightCm: ci.heightCm ?? undefined,
         quantity: ci.quantity,
-        unitPriceMAD: ci.unitPriceMAD,
       }))
     }
   } else {
-    const guest = await readGuestCart()
-    // Rehydrate unitPrice from painting base or matching recreation option
-    if (guest.length) {
-      const paintingIds = [...new Set(guest.map(g => g.paintingId))]
-      const paintings = await prisma.painting.findMany({ where: { id: { in: paintingIds } }, include: { images: true, recreationOptions: true } })
-      for (const g of guest) {
-        const p = paintings.find(p => p.id === g.paintingId)
-        if (!p) continue
-        let price = p.priceMAD
-        if (g.widthCm && g.heightCm) {
-          const opt = p.recreationOptions.find(o => o.widthCm === g.widthCm && o.heightCm === g.heightCm)
-          if (opt) price = opt.priceMAD
-        }
-        cartItems.push({ paintingId: g.paintingId, widthCm: g.widthCm, heightCm: g.heightCm, quantity: g.quantity, unitPriceMAD: price })
-      }
-    }
+    rawItems = await readGuestCart()
   }
 
   // Aggregate by key (merge duplicates if any)
-  const aggregated = new Map<string, { paintingId: string; widthCm?: number; heightCm?: number; quantity: number; unitPriceMAD: number }>()
-  for (const item of cartItems) {
-    const normalized = { paintingId: item.paintingId, widthCm: item.widthCm ?? undefined, heightCm: item.heightCm ?? undefined, quantity: item.quantity, unitPriceMAD: item.unitPriceMAD }
-    const key = lineKey(normalized)
+  const aggregated = new Map<string, RawCartItem>()
+  for (const item of rawItems) {
+    const key = lineKey(item)
     const existing = aggregated.get(key)
-    if (existing) existing.quantity += normalized.quantity
-    else aggregated.set(key, normalized)
+    if (existing) existing.quantity += item.quantity
+    else aggregated.set(key, { ...item })
   }
 
   const lines: CartLine[] = []
   if (aggregated.size) {
     const ids = [...new Set([...aggregated.values()].map(v => v.paintingId))]
-    const paintings = await prisma.painting.findMany({ where: { id: { in: ids } }, include: { images: true } })
+    const paintings = await prisma.painting.findMany({
+      where: { id: { in: ids } },
+      include: { images: { orderBy: { position: 'asc' }, take: 1 }, recreationOptions: true },
+    })
+    const byId = new Map(paintings.map(p => [p.id, p]))
     for (const value of aggregated.values()) {
-      const p = paintings.find(pp => pp.id === value.paintingId)
+      const p = byId.get(value.paintingId)
       if (!p) continue
-      const firstImg = p.images.sort((a,b)=> a.position - b.position)[0]
-      const lineTotalMAD = value.unitPriceMAD * value.quantity
+      // Price is always re-derived from the DB so customers pay the current price
+      let unitPriceMAD = p.priceMAD
+      if (value.widthCm && value.heightCm) {
+        const opt = p.recreationOptions.find(o => o.widthCm === value.widthCm && o.heightCm === value.heightCm)
+        if (opt) unitPriceMAD = opt.priceMAD
+      }
+      const quantity = p.kind === 'UNIQUE' ? 1 : value.quantity
       lines.push({
         key: lineKey(value),
         paintingId: value.paintingId,
         title: p.title,
-        imageUrl: firstImg?.url ?? null,
+        imageUrl: p.images[0]?.url ?? null,
         widthCm: value.widthCm,
         heightCm: value.heightCm,
-        unitPriceMAD: value.unitPriceMAD,
-        quantity: value.quantity,
-        lineTotalMAD,
+        unitPriceMAD,
+        quantity,
+        lineTotalMAD: unitPriceMAD * quantity,
+        available: p.available,
+        isUnique: p.kind === 'UNIQUE',
       })
     }
   }
 
-  const subtotalMAD = lines.reduce((s, l) => s + l.lineTotalMAD, 0)
+  const subtotalMAD = lines.filter(l => l.available).reduce((s, l) => s + l.lineTotalMAD, 0)
   const discountAmountMAD = discountPercent ? Math.floor((subtotalMAD * discountPercent) / 100) : undefined
   const totalMAD = subtotalMAD - (discountAmountMAD ?? 0)
-  return { items: lines, subtotalMAD, discountPercent, discountAmountMAD, totalMAD }
+  return { items: lines, subtotalMAD, discountPercent, discountAmountMAD, totalMAD, hasUnavailable: lines.some(l => !l.available) }
 }
 
 const addToCartSchema = z.object({
@@ -155,6 +155,7 @@ export async function addToCart(raw: unknown) {
   const { paintingId, widthCm, heightCm, quantity } = parsed.data
   const painting = await prisma.painting.findUnique({ where: { id: paintingId }, include: { recreationOptions: true } })
   if (!painting) return { ok: false as const, error: 'NOT_FOUND' as const }
+  if (!painting.available) return { ok: false as const, error: 'UNAVAILABLE' as const }
   let unitPriceMAD = painting.priceMAD
   if (widthCm && heightCm) {
     const opt = painting.recreationOptions.find(o => o.widthCm === widthCm && o.heightCm === heightCm)
@@ -176,7 +177,7 @@ export async function addToCart(raw: unknown) {
       await prisma.cartItem.create({ data: { userId: user.id, paintingId, widthCm, heightCm, unitPriceMAD, quantity: cappedQuantity } })
     }
   } else {
-  const guest = await readGuestCart()
+    const guest = await readGuestCart()
     const key = lineKey({ paintingId, widthCm, heightCm })
     const updated: CookieCartItem[] = []
     let merged = false
@@ -189,7 +190,7 @@ export async function addToCart(raw: unknown) {
       } else updated.push(item)
     }
     if (!merged) updated.push({ paintingId, widthCm, heightCm, quantity: cappedQuantity })
-    writeGuestCart(updated)
+    await writeGuestCart(updated)
   }
   return { ok: true as const }
 }
@@ -213,7 +214,7 @@ export async function updateCartItem(raw: unknown) {
     const enforcedQty = painting?.kind === 'UNIQUE' ? 1 : quantity
     await prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: enforcedQty } })
   } else {
-  const guest = await readGuestCart()
+    const guest = await readGuestCart()
     const updated: CookieCartItem[] = []
     for (const item of guest) {
       const k = lineKey(item)
@@ -225,7 +226,7 @@ export async function updateCartItem(raw: unknown) {
       }
       else updated.push(item)
     }
-    writeGuestCart(updated)
+    await writeGuestCart(updated)
   }
   return { ok: true as const }
 }
@@ -275,7 +276,7 @@ export async function mergeGuestCartIntoUser(userId: string) {
     }
     mergedCount++
   }
-  writeGuestCart([])
+  await writeGuestCart([])
   return { merged: mergedCount }
 }
 

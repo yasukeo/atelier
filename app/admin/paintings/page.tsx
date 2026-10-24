@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/db'
-import { deletePainting, deletePaintingImage } from './actions'
+import Link from 'next/link'
+import { addRecreationOption, deletePainting, deletePaintingImage, deleteRecreationOption } from './actions'
+import { formatMAD } from '@/lib/format'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import ClientEnhancements, { MultiImageDrop, PaintingForm } from './ui.client'
@@ -9,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export default async function AdminPaintingsPage({ searchParams }: { searchParams?: Promise<{ error?: string; success?: string }> }) {
   const [paintings, artists, styles, techniques] = await Promise.all([
     prisma.painting.findMany({
-      include: { artist: true, style: true, technique: true, images: { orderBy: { position: 'asc' } } },
+      include: { artist: true, style: true, technique: true, images: { orderBy: { position: 'asc' } }, recreationOptions: { orderBy: [{ widthCm: 'asc' }, { heightCm: 'asc' }] } },
       orderBy: { createdAt: 'desc' },
       take: 50,
     }),
@@ -88,6 +90,7 @@ export default async function AdminPaintingsPage({ searchParams }: { searchParam
                 <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">Masqué</span>
               )}
               <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{p.kind === 'UNIQUE' ? 'Unique' : 'Recréable'}</span>
+              <Link href={`/paintings/${p.id}`} target="_blank" className="ml-auto text-xs text-[#6B2D2D] underline underline-offset-2">Voir la page ↗</Link>
             </div>
             <div className="text-sm text-muted-foreground">
               {p.artist?.name ?? '—'} • {p.style?.name ?? '—'} • {p.technique?.name ?? '—'} • {p.widthCm}×{p.heightCm}cm • {p.priceMAD} MAD
@@ -104,6 +107,34 @@ export default async function AdminPaintingsPage({ searchParams }: { searchParam
                     </form>
                   </div>
                 ))}
+              </div>
+            )}
+            {p.kind === 'RECREATABLE' && (
+              <div className="mt-3 rounded border border-dashed p-3 space-y-2">
+                <p className="text-sm font-medium">Formats de re-création</p>
+                <p className="text-xs text-muted-foreground">
+                  Le format original ({p.widthCm}×{p.heightCm} cm, {formatMAD(p.priceMAD)}) est toujours proposé. Ajoutez d&apos;autres tailles avec leur prix.
+                </p>
+                {p.recreationOptions.length > 0 && (
+                  <ul className="flex flex-wrap gap-2">
+                    {p.recreationOptions.map(o => (
+                      <li key={o.id} className="flex items-center gap-2 rounded-full border bg-muted/40 pl-3 pr-1 py-1 text-xs">
+                        <span>{o.widthCm}×{o.heightCm} cm · {formatMAD(o.priceMAD)}</span>
+                        <form action={deleteRecreationOption}>
+                          <input type="hidden" name="id" value={o.id} />
+                          <button type="submit" className="w-5 h-5 rounded-full bg-red-600 text-white leading-none" aria-label={`Supprimer le format ${o.widthCm}×${o.heightCm}`}>×</button>
+                        </form>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <form action={addRecreationOption} className="flex flex-wrap items-center gap-2">
+                  <input type="hidden" name="paintingId" value={p.id} />
+                  <Input name="widthCm" type="number" min={1} placeholder="Largeur (cm)" className="w-32" required />
+                  <Input name="heightCm" type="number" min={1} placeholder="Hauteur (cm)" className="w-32" required />
+                  <Input name="priceMAD" type="number" min={0} placeholder="Prix (MAD)" className="w-32" required />
+                  <Button type="submit" variant="outline" size="sm">Ajouter le format</Button>
+                </form>
               </div>
             )}
             <div className="mt-3 grid gap-2 sm:grid-cols-3">

@@ -37,7 +37,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-2xl font-semibold">Commande #{order.id}</h1>
+        <h1 className="text-2xl font-semibold">Commande #{order.id.slice(-8).toUpperCase()} <span className="text-xs font-mono text-muted-foreground align-middle">{order.id}</span></h1>
   <form action={async (fd: FormData) => { 'use server'; await updateOrderStatusAction(fd); redirect(`/admin/orders/${order.id}`) }} className="flex items-center gap-2">
           <input type="hidden" name="orderId" value={order.id} />
           <select name="status" defaultValue={order.status} className="border rounded px-2 py-1 text-sm bg-background">

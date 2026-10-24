@@ -1,6 +1,17 @@
 import { Resend } from 'resend'
+import { escapeHtml, formatMAD } from '@/lib/format'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Created lazily: `new Resend()` throws when RESEND_API_KEY is missing (e.g. local dev).
+let resendClient: Resend | null = null
+
+async function sendEmail(payload: { to: string; subject: string; html: string; replyTo?: string }) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(`[email] RESEND_API_KEY not set, skipping "${payload.subject}" to ${payload.to}`)
+    return { error: null }
+  }
+  resendClient ??= new Resend(process.env.RESEND_API_KEY)
+  return resendClient.emails.send({ from: FROM_EMAIL, ...payload })
+}
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'Elwarcha <onboarding@resend.dev>'
 const SITE_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000'
@@ -19,7 +30,7 @@ interface OrderEmailData {
   customerName: string
   items: OrderItem[]
   subtotal: number
-  discount?: { code: string; percent: number }
+  discount?: { code: string; percent: number; amount?: number }
   shippingFee: number
   total: number
   address: string
@@ -30,8 +41,8 @@ export async function sendOrderConfirmation(to: string, data: OrderEmailData) {
   const itemsHtml = data.items.map(item => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #E9E7DB;">
-        <strong>${item.title}</strong>
-        ${item.dimensions ? `<br><span style="color: #8B7355; font-size: 12px;">${item.dimensions}</span>` : ''}
+        <strong>${escapeHtml(item.title)}</strong>
+        ${item.dimensions ? `<br><span style="color: #8B7355; font-size: 12px;">${escapeHtml(item.dimensions)}</span>` : ''}
       </td>
       <td style="padding: 12px; border-bottom: 1px solid #E9E7DB; text-align: center;">${item.quantity}</td>
       <td style="padding: 12px; border-bottom: 1px solid #E9E7DB; text-align: right;">${formatMAD(item.unitPrice * item.quantity)}</td>
@@ -55,7 +66,7 @@ export async function sendOrderConfirmation(to: string, data: OrderEmailData) {
         <!-- Content -->
         <div style="padding: 32px;">
           <h2 style="color: #6B2D2D; margin: 0 0 8px;">Merci pour votre commande !</h2>
-          <p style="color: #8B7355; margin: 0 0 24px;">Bonjour ${data.customerName},</p>
+          <p style="color: #8B7355; margin: 0 0 24px;">Bonjour ${escapeHtml(data.customerName)},</p>
           
           <p style="color: #2D2A26; margin: 0 0 24px;">
             Votre commande <strong>#${data.orderId.slice(-8).toUpperCase()}</strong> a bien été reçue. 
@@ -84,8 +95,8 @@ export async function sendOrderConfirmation(to: string, data: OrderEmailData) {
             </tr>
             ${data.discount ? `
               <tr>
-                <td style="padding: 12px 16px; color: #22C55E;">Réduction (${data.discount.code})</td>
-                <td style="padding: 12px 16px; color: #22C55E; text-align: right;">-${data.discount.percent}%</td>
+                <td style="padding: 12px 16px; color: #22C55E;">Réduction (${escapeHtml(data.discount.code)}, -${data.discount.percent}%)</td>
+                <td style="padding: 12px 16px; color: #22C55E; text-align: right;">${data.discount.amount !== undefined ? `-${formatMAD(data.discount.amount)}` : `-${data.discount.percent}%`}</td>
               </tr>
             ` : ''}
             <tr>
@@ -101,8 +112,8 @@ export async function sendOrderConfirmation(to: string, data: OrderEmailData) {
           <!-- Delivery Info -->
           <div style="margin-bottom: 24px;">
             <h3 style="color: #6B2D2D; font-size: 14px; margin: 0 0 8px;">Adresse de livraison</h3>
-            <p style="color: #2D2A26; margin: 0;">${data.address}</p>
-            <p style="color: #8B7355; margin: 4px 0 0;">Tél: ${data.phone}</p>
+            <p style="color: #2D2A26; margin: 0;">${escapeHtml(data.address)}</p>
+            <p style="color: #8B7355; margin: 4px 0 0;">Tél: ${escapeHtml(data.phone)}</p>
           </div>
           
           <!-- CTA -->
@@ -124,8 +135,7 @@ export async function sendOrderConfirmation(to: string, data: OrderEmailData) {
     </html>
   `
 
-  const { error } = await resend.emails.send({
-    from: FROM_EMAIL,
+  const { error } = await sendEmail({
     to,
     subject: `Confirmation de commande #${data.orderId.slice(-8).toUpperCase()}`,
     html,
@@ -160,7 +170,7 @@ export async function sendPasswordResetEmail(to: string, token: string, userName
         <div style="padding: 32px;">
           <h2 style="color: #6B2D2D; margin: 0 0 16px;">Réinitialisation du mot de passe</h2>
           <p style="color: #2D2A26; margin: 0 0 24px;">
-            Bonjour${userName ? ` ${userName}` : ''},
+            Bonjour${userName ? ` ${escapeHtml(userName)}` : ''},
           </p>
           <p style="color: #2D2A26; margin: 0 0 24px;">
             Vous avez demandé la réinitialisation de votre mot de passe. 
@@ -201,8 +211,7 @@ export async function sendPasswordResetEmail(to: string, token: string, userName
     </html>
   `
 
-  const { error } = await resend.emails.send({
-    from: FROM_EMAIL,
+  const { error } = await sendEmail({
     to,
     subject: 'Réinitialisation de votre mot de passe - Elwarcha',
     html,
@@ -264,7 +273,7 @@ export async function sendOrderStatusUpdate(
         <div style="padding: 32px;">
           <h2 style="color: #6B2D2D; margin: 0 0 16px;">${statusInfo.title}</h2>
           <p style="color: #2D2A26; margin: 0 0 16px;">
-            Bonjour${customerName ? ` ${customerName}` : ''},
+            Bonjour${customerName ? ` ${escapeHtml(customerName)}` : ''},
           </p>
           <p style="color: #2D2A26; margin: 0 0 24px;">
             ${statusInfo.message}
@@ -294,8 +303,7 @@ export async function sendOrderStatusUpdate(
     </html>
   `
 
-  const { error } = await resend.emails.send({
-    from: FROM_EMAIL,
+  const { error } = await sendEmail({
     to,
     subject: `${statusInfo.title} - Commande #${orderId.slice(-8).toUpperCase()}`,
     html,
@@ -339,15 +347,15 @@ export async function sendContactNotification(data: ContactData) {
           <h2 style="color: #6B2D2D; margin: 0 0 24px;">Nouveau message de contact</h2>
           
           <div style="background-color: #F7F5F0; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
-            <p style="margin: 0 0 8px;"><strong style="color: #6B2D2D;">Nom:</strong> <span style="color: #2D2A26;">${data.name}</span></p>
-            <p style="margin: 0 0 8px;"><strong style="color: #6B2D2D;">Email:</strong> <a href="mailto:${data.email}" style="color: #6B2D2D;">${data.email}</a></p>
-            ${data.phone ? `<p style="margin: 0 0 8px;"><strong style="color: #6B2D2D;">Téléphone:</strong> <span style="color: #2D2A26;">${data.phone}</span></p>` : ''}
-            <p style="margin: 0;"><strong style="color: #6B2D2D;">Sujet:</strong> <span style="color: #2D2A26;">${data.subject}</span></p>
+            <p style="margin: 0 0 8px;"><strong style="color: #6B2D2D;">Nom:</strong> <span style="color: #2D2A26;">${escapeHtml(data.name)}</span></p>
+            <p style="margin: 0 0 8px;"><strong style="color: #6B2D2D;">Email:</strong> <a href="mailto:${escapeHtml(data.email)}" style="color: #6B2D2D;">${escapeHtml(data.email)}</a></p>
+            ${data.phone ? `<p style="margin: 0 0 8px;"><strong style="color: #6B2D2D;">Téléphone:</strong> <span style="color: #2D2A26;">${escapeHtml(data.phone)}</span></p>` : ''}
+            <p style="margin: 0;"><strong style="color: #6B2D2D;">Sujet:</strong> <span style="color: #2D2A26;">${escapeHtml(data.subject)}</span></p>
           </div>
           
           <div style="background-color: #FDFCFA; padding: 16px; border: 1px solid #E9E7DB; border-radius: 8px;">
             <p style="color: #6B2D2D; font-weight: 600; margin: 0 0 8px;">Message:</p>
-            <p style="color: #2D2A26; margin: 0; white-space: pre-wrap;">${data.message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+            <p style="color: #2D2A26; margin: 0; white-space: pre-wrap;">${escapeHtml(data.message)}</p>
           </div>
         </div>
         
@@ -362,8 +370,7 @@ export async function sendContactNotification(data: ContactData) {
     </html>
   `
 
-  const { error } = await resend.emails.send({
-    from: FROM_EMAIL,
+  const { error } = await sendEmail({
     to: CONTACT_EMAIL,
     replyTo: data.email,
     subject: `[Contact] ${data.subject}`,
@@ -374,14 +381,4 @@ export async function sendContactNotification(data: ContactData) {
     console.error('Failed to send contact notification email:', error)
     throw error
   }
-}
-
-// ==================== Helpers ====================
-
-function formatMAD(value: number): string {
-  return new Intl.NumberFormat('fr-MA', {
-    style: 'currency',
-    currency: 'MAD',
-    maximumFractionDigits: 0,
-  }).format(value)
 }

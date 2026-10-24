@@ -89,27 +89,35 @@ export function Filters({ artists, styles, techniques }: { artists: {id:string; 
       {/* Desktop: always visible, Mobile: collapsible */}
       <div className={`${isOpen ? 'block' : 'hidden'} lg:block space-y-4`}>
         <div>
-          <label className="block text-xs font-medium mb-1 text-[#2D2A26]">Recherche</label>
-          <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Titre, artiste..." className="h-9 text-sm" />
+          <label htmlFor="filter-q" className="block text-xs font-medium mb-1 text-[#2D2A26]">Recherche</label>
+          <Input id="filter-q" type="search" value={q} onChange={e => setQ(e.target.value)} placeholder="Titre, artiste..." className="h-9 text-sm" />
+        </div>
+        <div>
+          <label htmlFor="filter-sort" className="block text-xs font-medium mb-1 text-[#2D2A26]">Trier par</label>
+          <select id="filter-sort" className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('sort')} onChange={e => setParam('sort', e.target.value || undefined)}>
+            <option value="">Nouveautés</option>
+            <option value="price-asc">Prix croissant</option>
+            <option value="price-desc">Prix décroissant</option>
+          </select>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-[#2D2A26]">Artiste</label>
-            <select className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('artist')} onChange={e => setParam('artist', e.target.value || undefined)}>
+            <label htmlFor="filter-artist" className="block text-xs font-medium text-[#2D2A26]">Artiste</label>
+            <select id="filter-artist" className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('artist')} onChange={e => setParam('artist', e.target.value || undefined)}>
               <option value="">Tous</option>
               {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-[#2D2A26]">Style</label>
-            <select className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('style')} onChange={e => setParam('style', e.target.value || undefined)}>
+            <label htmlFor="filter-style" className="block text-xs font-medium text-[#2D2A26]">Style</label>
+            <select id="filter-style" className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('style')} onChange={e => setParam('style', e.target.value || undefined)}>
               <option value="">Tous</option>
               {styles.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-[#2D2A26]">Technique</label>
-            <select className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('technique')} onChange={e => setParam('technique', e.target.value || undefined)}>
+            <label htmlFor="filter-technique" className="block text-xs font-medium text-[#2D2A26]">Technique</label>
+            <select id="filter-technique" className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('technique')} onChange={e => setParam('technique', e.target.value || undefined)}>
               <option value="">Toutes</option>
               {techniques.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
@@ -153,8 +161,8 @@ export function Filters({ artists, styles, techniques }: { artists: {id:string; 
           minStepsBetweenThumbs={1}
         />
         <div className="space-y-1">
-          <label className="block text-xs font-medium text-[#2D2A26]">Type</label>
-          <select className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('kind')} onChange={e => setParam('kind', e.target.value || undefined)}>
+          <label htmlFor="filter-kind" className="block text-xs font-medium text-[#2D2A26]">Type</label>
+          <select id="filter-kind" className="w-full border border-[#D8D5C8] rounded h-9 text-sm bg-white px-2 text-[#2D2A26]" value={current('kind')} onChange={e => setParam('kind', e.target.value || undefined)}>
             <option value="">Tous</option>
             <option value="UNIQUE">Unique</option>
             <option value="RECREATABLE">Recréable</option>
@@ -163,7 +171,7 @@ export function Filters({ artists, styles, techniques }: { artists: {id:string; 
       </div>
       <div className="flex gap-2 pt-2">
         <Button type="button" variant="outline" size="sm" className="text-xs flex-1 border-[#D8D5C8] text-[#6B2D2D]" onClick={() => {
-          const keys = ['q','artist','style','technique','minPrice','maxPrice','minWidth','maxWidth','minHeight','maxHeight','kind']
+          const keys = ['q','artist','style','technique','minPrice','maxPrice','minWidth','maxWidth','minHeight','maxHeight','kind','sort']
           const sp = new URLSearchParams(searchParams.toString())
           keys.forEach(k => sp.delete(k))
           router.replace(pathname + (sp.toString() ? '?' + sp.toString() : ''), { scroll: false })

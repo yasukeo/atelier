@@ -99,11 +99,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6 text-sm text-[#8B7355]">
-              <a href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</a>
-              <a href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</a>
-              <a href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</a>
+              <Link href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</Link>
+              <Link href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</Link>
+              <Link href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</Link>
               {session?.user && (
-                <a href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</a>
+                <Link href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</Link>
               )}
             </nav>
             
@@ -132,16 +132,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               
               {/* Main Navigation */}
               <nav className="flex items-center gap-4 sm:gap-6 text-sm text-[#8B7355]">
-                <a href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</a>
-                <a href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</a>
-                <a href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</a>
+                <Link href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</Link>
+                <Link href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</Link>
+                <Link href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</Link>
               </nav>
 
               {/* Account Links */}
               {session?.user && (
                 <nav className="flex items-center gap-4 sm:gap-6 text-sm text-[#8B7355]">
-                  <a href="/profile" className="hover:text-[#6B2D2D] transition-colors">Mon profil</a>
-                  <a href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</a>
+                  <Link href="/profile" className="hover:text-[#6B2D2D] transition-colors">Mon profil</Link>
+                  <Link href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</Link>
                 </nav>
               )}
               
@@ -160,10 +160,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               
               {/* Policy Links - Grid on mobile for better readability */}
               <nav className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-3 sm:gap-4 text-xs text-[#8B7355] text-center">
-                <a href="/privacy" className="hover:text-[#6B2D2D] transition-colors py-1">Confidentialité</a>
-                <a href="/refund" className="hover:text-[#6B2D2D] transition-colors py-1">Remboursement</a>
-                <a href="/terms" className="hover:text-[#6B2D2D] transition-colors py-1">Conditions</a>
-                <a href="/shipping" className="hover:text-[#6B2D2D] transition-colors py-1">Expédition</a>
+                <Link href="/privacy" className="hover:text-[#6B2D2D] transition-colors py-1">Confidentialité</Link>
+                <Link href="/refund" className="hover:text-[#6B2D2D] transition-colors py-1">Remboursement</Link>
+                <Link href="/terms" className="hover:text-[#6B2D2D] transition-colors py-1">Conditions</Link>
+                <Link href="/shipping" className="hover:text-[#6B2D2D] transition-colors py-1">Expédition</Link>
               </nav>
               
               {/* Copyright */}
