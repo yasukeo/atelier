@@ -1,6 +1,6 @@
 "use client"
 import { signIn } from 'next-auth/react'
-import { useState, useTransition, FormEvent, useEffect, Suspense } from 'react'
+import { useState, useTransition, FormEvent, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { fr, t } from '@/lib/i18n'
@@ -23,6 +23,19 @@ function registerValidationMessage(fields: string | null) {
   return messages.length ? messages.join(', ') : 'Informations invalides.'
 }
 
+function urlMessages(params: URLSearchParams): { error: string | null; success: string | null } {
+  const e = params.get('error')
+  if (e === 'exists') return { error: 'Un compte existe déjà avec cet email.', success: null }
+  if (e === 'validation') return { error: registerValidationMessage(params.get('fields')), success: null }
+  if (e === 'invalid') return { error: 'Informations invalides.', success: null }
+  if (e === 'rate-limited') return { error: 'Trop de comptes créés depuis cette connexion. Réessayez dans une heure.', success: null }
+  if (e) return { error: 'Une erreur est survenue. Veuillez réessayer.', success: null }
+  const s = params.get('success')
+  if (s === 'registered') return { error: null, success: 'Compte créé. Vous pouvez vous connecter.' }
+  if (s === 'password-reset') return { error: null, success: 'Mot de passe modifié. Vous pouvez vous connecter.' }
+  return { error: null, success: null }
+}
+
 export default function SignInPage() {
   return <Suspense><SignInContent /></Suspense>
 }
@@ -40,30 +53,25 @@ function SignInContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [showRegPassword, setShowRegPassword] = useState(false)
   const [showRegPasswordConfirm, setShowRegPasswordConfirm] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  useEffect(() => {
-    const e = params.get('error')
-    if (e) {
-      if (e === 'exists') setError('Un compte existe déjà avec cet email.')
-      else if (e === 'validation') setError(registerValidationMessage(params.get('fields')))
-      else if (e === 'invalid') setError('Informations invalides.')
-      else if (e === 'rate-limited') setError('Trop de comptes créés depuis cette connexion. Réessayez dans une heure.')
-      else setError('Une erreur est survenue. Veuillez réessayer.')
-    } else if (params.get('success')) {
-      const s = params.get('success')
-      if (s === 'registered') setSuccess('Compte créé. Vous pouvez vous connecter.')
-      else if (s === 'password-reset') setSuccess('Mot de passe modifié. Vous pouvez vous connecter.')
-    } else {
-      setError(null); setSuccess(null)
-    }
-  }, [params])
+  // Messages come from the URL (server action redirects) unless a local submit replaced them;
+  // a new URL brings its own message back (state adjusted during render, not in an effect)
+  const [localError, setLocalError] = useState<string | null | undefined>(undefined)
+  const paramsKey = params.toString()
+  const [shownParamsKey, setShownParamsKey] = useState(paramsKey)
+  if (paramsKey !== shownParamsKey) {
+    setShownParamsKey(paramsKey)
+    setLocalError(undefined)
+  }
+  const fromUrl = urlMessages(params)
+  const error = localError !== undefined ? localError : fromUrl.error
+  const success = localError !== undefined ? null : fromUrl.success
+  const setError = (message: string | null) => setLocalError(message)
 
   async function onLogin(e: FormEvent) {
     e.preventDefault()
-    setError(null); setSuccess(null)
+    setError(null)
     const res = await signIn('credentials', { email, password, redirect: false })
     if (res?.error === 'TooManyAttempts') setError('Trop de tentatives de connexion. Réessayez dans 15 minutes ou réinitialisez votre mot de passe.')
     else if (res?.error) setError(t('auth.signIn.error', fr))
@@ -72,7 +80,7 @@ function SignInContent() {
 
   function onRegister(e: FormEvent) {
     e.preventDefault()
-    setError(null); setSuccess(null)
+    setError(null)
     if (regPassword !== regPasswordConfirm) {
       setError('Les mots de passe ne correspondent pas.')
       return

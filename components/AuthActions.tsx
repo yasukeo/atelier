@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { SignOutButton } from '@/components/SignOutButton'
 import { cn } from '@/lib/utils'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 interface SessionUser { email?: string; role?: string }
 
@@ -16,12 +16,9 @@ interface Props {
 
 export function AuthActions({ session, variant = 'bar', showRegister = true, className }: Props) {
   const params = useSearchParams()
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login')
-
-  // If coming from a CTA specifying register
-  useEffect(() => {
-    if (params.get('tab') === 'register') setActiveTab('register')
-  }, [params])
+  const [choseRegister, setChoseRegister] = useState(false)
+  // Register tab if chosen here or if coming from a CTA specifying it
+  const activeTab: 'login' | 'register' = choseRegister || params.get('tab') === 'register' ? 'register' : 'login'
 
   const isAdmin = session?.role === 'ADMIN'
 
@@ -41,7 +38,7 @@ export function AuthActions({ session, variant = 'bar', showRegister = true, cla
         </Link>
         {showRegister && activeTab !== 'register' && (
             <button
-              onClick={() => setActiveTab('register')}
+              onClick={() => setChoseRegister(true)}
               className={cn('text-xs underline text-muted-foreground hover:text-foreground hidden sm:inline-flex')}
             >Créer un compte</button>
         )}

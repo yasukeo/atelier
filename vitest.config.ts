@@ -2,8 +2,6 @@ import { defineConfig } from "vitest/config";
 import path from "node:path";
 
 export default defineConfig({
-  // esbuild handles JSX (tsconfig uses "preserve" for Next.js, so force the automatic runtime)
-  esbuild: { jsx: "automatic" },
   test: {
     environment: "jsdom",
     globals: true,
