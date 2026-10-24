@@ -67,6 +67,7 @@ function ForgotPasswordContent() {
                     id="email"
                     name="email"
                     type="email"
+                    autoComplete="email"
                     required
                     placeholder="votre@email.com"
                     className="bg-[#FDFCFA] border-[#DCD9CC]"

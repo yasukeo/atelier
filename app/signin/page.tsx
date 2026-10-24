@@ -109,7 +109,7 @@ function SignInContent() {
               <form onSubmit={onLogin} className="space-y-4">
                 <div className="space-y-1">
                   <label htmlFor="login-email" className="text-xs font-medium">{t('auth.signIn.email', fr)}</label>
-                  <Input id="login-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="vous@exemple.com" />
+                  <Input id="login-email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="vous@exemple.com" />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
@@ -117,8 +117,8 @@ function SignInContent() {
                     <a href="/forgot-password" className="text-xs text-[#6B2D2D] hover:underline">Mot de passe oublié ?</a>
                   </div>
                   <div className="relative">
-                    <Input id="login-password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••" className="pr-10" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#6B2D2D]">
+                    <Input id="login-password" autoComplete="current-password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••" className="pr-10" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} aria-pressed={showPassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#6B2D2D]">
                       {showPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                     </button>
                   </div>
@@ -130,17 +130,17 @@ function SignInContent() {
               <form onSubmit={onRegister} className="space-y-4">
                 <div className="space-y-1">
                   <label htmlFor="reg-name" className="text-xs font-medium">Nom</label>
-                  <Input id="reg-name" value={regName} onChange={e => setRegName(e.target.value)} required placeholder="Votre nom" />
+                  <Input id="reg-name" autoComplete="name" value={regName} onChange={e => setRegName(e.target.value)} required placeholder="Votre nom" />
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="reg-email" className="text-xs font-medium">Email</label>
-                  <Input id="reg-email" type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} required placeholder="vous@exemple.com" />
+                  <Input id="reg-email" type="email" autoComplete="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} required placeholder="vous@exemple.com" />
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="reg-password" className="text-xs font-medium">Mot de passe</label>
                   <div className="relative">
-                    <Input id="reg-password" type={showRegPassword ? 'text' : 'password'} value={regPassword} onChange={e => setRegPassword(e.target.value)} required placeholder="Minimum 6 caractères" className="pr-10" />
-                    <button type="button" onClick={() => setShowRegPassword(!showRegPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#6B2D2D]">
+                    <Input id="reg-password" autoComplete="new-password" type={showRegPassword ? 'text' : 'password'} value={regPassword} onChange={e => setRegPassword(e.target.value)} required placeholder="Minimum 6 caractères" className="pr-10" />
+                    <button type="button" onClick={() => setShowRegPassword(!showRegPassword)} aria-label={showRegPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} aria-pressed={showRegPassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#6B2D2D]">
                       {showRegPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                     </button>
                   </div>
@@ -148,8 +148,8 @@ function SignInContent() {
                 <div className="space-y-1">
                   <label htmlFor="reg-password-confirm" className="text-xs font-medium">Confirmer le mot de passe</label>
                   <div className="relative">
-                    <Input id="reg-password-confirm" type={showRegPasswordConfirm ? 'text' : 'password'} value={regPasswordConfirm} onChange={e => setRegPasswordConfirm(e.target.value)} required placeholder="Retapez le mot de passe" className="pr-10" />
-                    <button type="button" onClick={() => setShowRegPasswordConfirm(!showRegPasswordConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#6B2D2D]">
+                    <Input id="reg-password-confirm" autoComplete="new-password" type={showRegPasswordConfirm ? 'text' : 'password'} value={regPasswordConfirm} onChange={e => setRegPasswordConfirm(e.target.value)} required placeholder="Retapez le mot de passe" className="pr-10" />
+                    <button type="button" onClick={() => setShowRegPasswordConfirm(!showRegPasswordConfirm)} aria-label={showRegPasswordConfirm ? 'Masquer le mot de passe' : 'Afficher le mot de passe'} aria-pressed={showRegPasswordConfirm} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B7355] hover:text-[#6B2D2D]">
                       {showRegPasswordConfirm ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
                     </button>
                   </div>

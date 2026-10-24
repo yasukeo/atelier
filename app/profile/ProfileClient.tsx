@@ -99,8 +99,9 @@ export default function ProfileClient({ user }: ProfileClientProps) {
           <CardContent>
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Email</label>
+                <label htmlFor="profile-email" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Email</label>
                 <Input 
+                  id="profile-email"
                   type="email" 
                   value={user.email} 
                   disabled 
@@ -109,8 +110,11 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                 <p className="text-xs text-[#8B7355] mt-1">L'email ne peut pas être modifié</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Nom complet</label>
+                <label htmlFor="profile-name" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Nom complet</label>
                 <Input 
+                  id="profile-name"
+                  autoComplete="name"
+                  maxLength={80}
                   value={name} 
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Votre nom"
@@ -137,9 +141,11 @@ export default function ProfileClient({ user }: ProfileClientProps) {
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Mot de passe actuel</label>
+                <label htmlFor="current-password" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Mot de passe actuel</label>
                 <Input 
+                  id="current-password"
                   type="password" 
+                  autoComplete="current-password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
@@ -147,9 +153,11 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Nouveau mot de passe</label>
+                <label htmlFor="new-password" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Nouveau mot de passe</label>
                 <Input 
+                  id="new-password"
                   type="password" 
+                  autoComplete="new-password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
@@ -158,9 +166,11 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2D2A26] mb-1.5">Confirmer le nouveau mot de passe</label>
+                <label htmlFor="confirm-password" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Confirmer le nouveau mot de passe</label>
                 <Input 
+                  id="confirm-password"
                   type="password" 
+                  autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required

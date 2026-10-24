@@ -103,7 +103,10 @@ function ResetPasswordContent() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 required
+                minLength={6}
+                maxLength={100}
                 placeholder="Minimum 6 caractères"
                 className="bg-[#FDFCFA] border-[#DCD9CC]"
               />
@@ -117,7 +120,10 @@ function ResetPasswordContent() {
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 required
+                minLength={6}
+                maxLength={100}
                 placeholder="Répétez le mot de passe"
                 className="bg-[#FDFCFA] border-[#DCD9CC]"
               />

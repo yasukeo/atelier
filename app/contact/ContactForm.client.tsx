@@ -41,31 +41,31 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
     >
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-medium mb-1">Nom *</label>
-          <Input name="name" required minLength={2} maxLength={80} aria-invalid={!!errors.name} />
+          <label htmlFor="contact-name" className="block text-xs font-medium mb-1">Nom *</label>
+          <Input id="contact-name" name="name" autoComplete="name" required minLength={2} maxLength={80} aria-invalid={!!errors.name} />
           {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name[0]}</p>}
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Email *</label>
-          <Input type="email" name="email" required aria-invalid={!!errors.email} />
+          <label htmlFor="contact-email" className="block text-xs font-medium mb-1">Email *</label>
+          <Input id="contact-email" type="email" name="email" autoComplete="email" required aria-invalid={!!errors.email} />
           {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email[0]}</p>}
         </div>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-medium mb-1">Téléphone (optionnel)</label>
-          <Input name="phone" placeholder="+212..." aria-invalid={!!errors.phone} />
+          <label htmlFor="contact-phone" className="block text-xs font-medium mb-1">Téléphone (optionnel)</label>
+          <Input id="contact-phone" name="phone" type="tel" autoComplete="tel" placeholder="+212..." aria-invalid={!!errors.phone} />
           {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone[0]}</p>}
         </div>
         <div>
-          <label className="block text-xs font-medium mb-1">Sujet *</label>
-          <Input name="subject" defaultValue={defaultSubject} required minLength={3} maxLength={120} aria-invalid={!!errors.subject} />
+          <label htmlFor="contact-subject" className="block text-xs font-medium mb-1">Sujet *</label>
+          <Input id="contact-subject" name="subject" defaultValue={defaultSubject} required minLength={3} maxLength={120} aria-invalid={!!errors.subject} />
           {errors.subject && <p className="mt-1 text-xs text-red-600">{errors.subject[0]}</p>}
         </div>
       </div>
       <div>
-        <label className="block text-xs font-medium mb-1">Message *</label>
-        <Textarea name="message" required minLength={10} maxLength={2000} rows={6} aria-invalid={!!errors.message} />
+        <label htmlFor="contact-message" className="block text-xs font-medium mb-1">Message *</label>
+        <Textarea id="contact-message" name="message" required minLength={10} maxLength={2000} rows={6} aria-invalid={!!errors.message} />
         {errors.message && <p className="mt-1 text-xs text-red-600">{errors.message[0]}</p>}
       </div>
       <div className="hidden"><input type="text" name="website" tabIndex={-1} autoComplete="off" /></div>
