@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db'
 import Link from 'next/link'
-import PaintingCard from './painting-card'
-import { Filters } from './Filters.client'
+import PaintingCard from '../painting-card'
+import { Filters } from '../Filters.client'
 import { parsePaintingFilters } from '@/lib/painting-filters'
 import { paintingCardInclude } from '@/lib/paintings'
 import type { Metadata } from 'next'
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 }
 import { Prisma } from '@prisma/client'
 import { Suspense } from 'react'
-import { PaintingGridSkeleton } from './skeletons'
+import { PaintingGridSkeleton } from '../skeletons'
 
 // ISR: cache for 1 min; on revalidation failure Next.js keeps serving stale content
 export const revalidate = 60

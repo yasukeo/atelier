@@ -2,16 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { AuthActions } from '@/components/AuthActions'
 import Link from 'next/link'
 import CartButton from '@/components/CartButton'
 import Image from 'next/image'
 import { InstagramIcon, FacebookIcon, TikTokIcon } from '@/components/icons'
-import type { Session } from 'next-auth'
-import { MobileNav } from '@/components/MobileNav'
-import { Suspense } from 'react'
+import { FooterAccountLinks, HeaderAccount, OrdersNavLink, Providers } from '@/components/SessionNav'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -79,16 +74,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  let session: Session | null = null
-  try {
-    session = await getServerSession(authOptions)
-  } catch {
-    // Graceful fallback: show page as logged-out rather than crashing
-  }
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#F7F5F0]`}>        
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#F7F5F0]`}>
+        <Providers>
         <header className="sticky top-0 z-50 w-full border-b border-[#DCD9CC] bg-[#F7F5F0]/95 backdrop-blur-sm">
           <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
             {/* Logo */}
@@ -102,23 +92,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</Link>
               <Link href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</Link>
               <Link href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</Link>
-              {session?.user && (
-                <Link href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</Link>
-              )}
+              <OrdersNavLink />
             </nav>
             
             {/* Right Actions */}
             <div className="flex items-center gap-3">
               <CartButton />
-              <div className="hidden md:flex">
-                <Suspense>
-                  <AuthActions session={(session?.user as { email?: string; role?: string }) ?? null} variant="bar" />
-                </Suspense>
-              </div>
-              {/* Mobile Menu */}
-              <Suspense>
-                <MobileNav session={(session?.user as { email?: string; role?: string }) ?? null} />
-              </Suspense>
+              {/* Desktop auth actions + mobile menu */}
+              <HeaderAccount />
             </div>
           </div>
         </header>
@@ -138,12 +119,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </nav>
 
               {/* Account Links */}
-              {session?.user && (
-                <nav className="flex items-center gap-4 sm:gap-6 text-sm text-[#8B7355]">
-                  <Link href="/profile" className="hover:text-[#6B2D2D] transition-colors">Mon profil</Link>
-                  <Link href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</Link>
-                </nav>
-              )}
+              <FooterAccountLinks />
               
               {/* Social Links */}
               <div className="flex items-center gap-5">
@@ -172,6 +148,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </footer>
         <Toaster richColors closeButton position="top-right" />
+        </Providers>
       </body>
     </html>
   )

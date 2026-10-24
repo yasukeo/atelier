@@ -12,6 +12,11 @@ const SITE_URL = 'https://www.elwarcha.com'
 // ISR: cached 5 min, refreshed on demand when admins edit a painting or an order sells it
 export const revalidate = 300
 
+// No paths prebuilt (no DB access at build time): each page is rendered on its first visit, then cached
+export async function generateStaticParams() {
+  return []
+}
+
 const orientationLabels: Record<string, string> = {
   PORTRAIT: 'Portrait',
   PAYSAGE: 'Paysage',
