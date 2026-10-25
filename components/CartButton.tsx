@@ -1,7 +1,6 @@
 "use client"
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { ShoppingCartIcon } from './icons'
 
 export default function CartButton() {
   const [count, setCount] = useState<number | null>(null)
@@ -22,15 +21,24 @@ export default function CartButton() {
     }
   }, [])
 
+  const filled = count !== null && count > 0
   return (
-    <Link href="/cart" className="relative inline-flex items-center gap-1.5 text-xs font-medium text-[#8B7355] hover:text-[#6B2D2D] transition-colors mr-2">
-      <ShoppingCartIcon className="w-5 h-5" />
-      <span className="hidden sm:inline">Panier</span>
-      {count !== null && count > 0 && (
-        <span className="absolute -top-2 -right-4 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#6B2D2D] px-1 text-[10px] font-bold text-white">
-          {count}
-        </span>
-      )}
+    <Link
+      href="/cart"
+      aria-label={filled ? `Panier, ${count} article${count > 1 ? 's' : ''}` : 'Panier'}
+      className="inline-flex items-center gap-2 text-[14px] text-encre/70 hover:text-encre transition-colors"
+    >
+      <span>Panier</span>
+      <span
+        aria-hidden="true"
+        className={
+          filled
+            ? 'inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-grenat px-1.5 text-[11px] font-semibold text-white tabular'
+            : 'inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-trait px-1.5 text-[11px] text-pierre tabular'
+        }
+      >
+        {count ?? 0}
+      </span>
     </Link>
   )
 }

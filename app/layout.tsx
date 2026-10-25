@@ -1,22 +1,38 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Aref_Ruqaa, Gloock, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import Link from 'next/link'
 import CartButton from '@/components/CartButton'
 import Image from 'next/image'
 import { InstagramIcon, FacebookIcon, TikTokIcon } from '@/components/icons'
-import { FooterAccountLinks, HeaderAccount, OrdersNavLink, Providers } from '@/components/SessionNav'
+import { FooterAccountLinks, HeaderAccount, Providers } from '@/components/SessionNav'
+import { SiteNav } from '@/components/SiteNav'
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const hanken = Hanken_Grotesk({
+  variable: "--font-hanken",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Display face: titles and painting names
+const gloock = Gloock({
+  variable: "--font-gloock",
+  weight: "400",
   subsets: ["latin"],
 });
+
+// Calligraphic Arabic for the الورشة wordmark, close to the logo's brush lettering
+const ruqaa = Aref_Ruqaa({
+  variable: "--font-ruqaa",
+  weight: ["400", "700"],
+  subsets: ["arabic"],
+});
+
+const SOCIALS = [
+  { href: 'https://www.instagram.com/el.warcha/', label: 'Instagram', Icon: InstagramIcon },
+  { href: 'https://www.facebook.com/profile.php?id=61581883214871', label: 'Facebook', Icon: FacebookIcon },
+  { href: 'https://www.tiktok.com/@elwarcha.com', label: 'TikTok', Icon: TikTokIcon },
+]
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.elwarcha.com'),
@@ -77,77 +93,78 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[#F7F5F0]`}>
+      <body className={`${hanken.variable} ${gloock.variable} ${ruqaa.variable} antialiased min-h-screen flex flex-col bg-chaux text-encre`}>
         <Providers>
-        <header className="sticky top-0 z-50 w-full border-b border-[#DCD9CC] bg-[#F7F5F0]/95 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 shrink-0">
-              <Image src="/logos/icone (1).png" alt="Elwarcha" width={36} height={36} />
-              <span className="text-base font-semibold tracking-tight text-[#6B2D2D]">Elwarcha</span>
+        <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:bg-encre focus:text-chaux focus:px-4 focus:py-2 focus:text-sm">
+          Aller au contenu
+        </a>
+        <header className="sticky top-0 z-50 w-full border-b border-trait bg-chaux/90 backdrop-blur-md">
+          <div className="max-w-[88rem] mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-6">
+            <Link href="/" className="group flex items-center gap-2.5 shrink-0" aria-label="Elwarcha, accueil">
+              <Image src="/logos/icone (1).png" alt="" width={31} height={34} className="h-[34px] w-auto transition-transform duration-700 group-hover:rotate-45" priority />
+              <span className="font-display text-[22px] leading-none text-encre">Elwarcha</span>
+              <span lang="ar" dir="rtl" className="hidden sm:inline font-arabic text-[22px] leading-none text-grenat translate-y-[2px]">الورشة</span>
             </Link>
-            
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-6 text-sm text-[#8B7355]">
-              <Link href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</Link>
-              <Link href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</Link>
-              <Link href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</Link>
-              <OrdersNavLink />
-            </nav>
-            
-            {/* Right Actions */}
-            <div className="flex items-center gap-3">
+
+            <SiteNav />
+
+            <div className="flex items-center gap-4 sm:gap-5">
               <CartButton />
-              {/* Desktop auth actions + mobile menu */}
               <HeaderAccount />
             </div>
           </div>
         </header>
-        <main className="flex-1">{children}</main>
-        <footer className="border-t border-[#D8D5C8] bg-[#E9E7DB]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-            {/* Mobile: Stack vertically, Desktop: Grid layout */}
-            <div className="flex flex-col items-center gap-8">
-              {/* Logo */}
-              <Image src="/logos/Plan de travail 11.png" alt="Elwarcha الورشة" width={120} height={86} className="object-contain" />
-              
-              {/* Main Navigation */}
-              <nav className="flex items-center gap-4 sm:gap-6 text-sm text-[#8B7355]">
-                <Link href="/paintings" className="hover:text-[#6B2D2D] transition-colors">Galerie</Link>
-                <Link href="/about" className="hover:text-[#6B2D2D] transition-colors">À propos</Link>
-                <Link href="/contact" className="hover:text-[#6B2D2D] transition-colors">Contact</Link>
-              </nav>
-
-              {/* Account Links */}
-              <FooterAccountLinks />
-              
-              {/* Social Links */}
-              <div className="flex items-center gap-5">
-                <a href="https://www.instagram.com/el.warcha/" target="_blank" rel="noopener noreferrer" className="text-[#8B7355] hover:text-[#6B2D2D] transition-colors p-2" aria-label="Instagram">
-                  <InstagramIcon className="w-6 h-6" />
-                </a>
-                <a href="https://www.facebook.com/profile.php?id=61581883214871" target="_blank" rel="noopener noreferrer" className="text-[#8B7355] hover:text-[#6B2D2D] transition-colors p-2" aria-label="Facebook">
-                  <FacebookIcon className="w-6 h-6" />
-                </a>
-                <a href="https://www.tiktok.com/@elwarcha.com" target="_blank" rel="noopener noreferrer" className="text-[#8B7355] hover:text-[#6B2D2D] transition-colors p-2" aria-label="TikTok">
-                  <TikTokIcon className="w-6 h-6" />
-                </a>
+        <main id="contenu" className="flex-1">{children}</main>
+        <footer className="bg-nuit text-sable/80">
+          <div className="max-w-[88rem] mx-auto px-5 sm:px-8 pt-16 pb-10">
+            <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+              <div className="space-y-4">
+                <p lang="ar" dir="rtl" className="font-arabic text-6xl leading-none text-sable text-left">الورشة</p>
+                <p className="text-sm leading-relaxed max-w-xs">
+                  Elwarcha — « l&apos;atelier » en arabe. Tableaux originaux peints à la main au Maroc.
+                </p>
               </div>
-              
-              {/* Policy Links - Grid on mobile for better readability */}
-              <nav className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-3 sm:gap-4 text-xs text-[#8B7355] text-center">
-                <Link href="/privacy" className="hover:text-[#6B2D2D] transition-colors py-1">Confidentialité</Link>
-                <Link href="/refund" className="hover:text-[#6B2D2D] transition-colors py-1">Remboursement</Link>
-                <Link href="/terms" className="hover:text-[#6B2D2D] transition-colors py-1">Conditions</Link>
-                <Link href="/shipping" className="hover:text-[#6B2D2D] transition-colors py-1">Expédition</Link>
+              <nav aria-label="Boutique" className="space-y-3 text-sm">
+                <p className="eyebrow text-sable/70">Boutique</p>
+                <ul className="space-y-2">
+                  <li><Link href="/paintings" className="hover:text-white transition-colors">Galerie</Link></li>
+                  <li><Link href="/paintings?kind=UNIQUE" className="hover:text-white transition-colors">Pièces uniques</Link></li>
+                  <li><Link href="/paintings?kind=RECREATABLE" className="hover:text-white transition-colors">Re-créations</Link></li>
+                  <li><Link href="/about" className="hover:text-white transition-colors">L&apos;atelier</Link></li>
+                </ul>
+                <FooterAccountLinks />
               </nav>
-              
-              {/* Copyright */}
-              <p className="text-xs text-[#8B7355] text-center">© {new Date().getFullYear()} Elwarcha. Tous droits réservés.</p>
+              <nav aria-label="Aide" className="space-y-3 text-sm">
+                <p className="eyebrow text-sable/70">Aide</p>
+                <ul className="space-y-2">
+                  <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+                  <li><Link href="/shipping" className="hover:text-white transition-colors">Expédition</Link></li>
+                  <li><Link href="/refund" className="hover:text-white transition-colors">Remboursement</Link></li>
+                  <li><Link href="/terms" className="hover:text-white transition-colors">Conditions</Link></li>
+                  <li><Link href="/privacy" className="hover:text-white transition-colors">Confidentialité</Link></li>
+                </ul>
+              </nav>
+              <div className="space-y-3 text-sm">
+                <p className="eyebrow text-sable/70">Suivre l&apos;atelier</p>
+                <ul className="space-y-2">
+                  {SOCIALS.map(({ href, label, Icon }) => (
+                    <li key={label}>
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 hover:text-white transition-colors">
+                        <Icon className="w-4 h-4" />
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="mt-14 pt-6 border-t border-sable/15 flex flex-wrap items-center justify-between gap-3 text-xs text-sable/70">
+              <p>© {new Date().getFullYear()} Elwarcha. Tous droits réservés.</p>
+              <p>Livraison partout au Maroc</p>
             </div>
           </div>
         </footer>
-        <Toaster richColors closeButton position="top-right" />
+        <Toaster closeButton position="bottom-right" />
         </Providers>
       </body>
     </html>

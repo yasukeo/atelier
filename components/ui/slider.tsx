@@ -28,9 +28,9 @@ export function RangeSlider({ className, label, format = v => v.toString(), with
 
   return (
     <div className={cn('w-full', className)}>
-      {label && <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium">{label}</span>
-        <span className="text-[10px] text-muted-foreground">{format(values[0])} – {format(values[1])}</span>
+      {label && <div className="flex items-baseline justify-between mb-3">
+        <span className="text-[13px] font-medium text-encre">{label}</span>
+        <span className="text-[13px] text-pierre tabular">{format(values[0])} – {format(values[1])}</span>
       </div>}
       <SliderPrimitive.Root
         {...props}
@@ -43,11 +43,11 @@ export function RangeSlider({ className, label, format = v => v.toString(), with
         onValueCommit={(v:number[]) => { onValueCommit?.(v) }}
         minStepsBetweenThumbs={minStepsBetweenThumbs}
       >
-        <SliderPrimitive.Track className="bg-secondary relative grow rounded-full h-1">
-          <SliderPrimitive.Range className="absolute h-full bg-primary rounded-full" />
+        <SliderPrimitive.Track className="bg-trait relative grow h-px">
+          <SliderPrimitive.Range className="absolute h-[2px] -top-[0.5px] bg-encre" />
         </SliderPrimitive.Track>
-        <SliderPrimitive.Thumb className="block w-4 h-4 bg-background border border-primary rounded-full shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50" />
-        <SliderPrimitive.Thumb className="block w-4 h-4 bg-background border border-primary rounded-full shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-50" />
+        <SliderPrimitive.Thumb aria-label={label ? `${label}, minimum` : 'Minimum'} className="block size-4 bg-papier border-2 border-encre rounded-full focus-visible:outline-2 focus-visible:outline-grenat focus-visible:outline-offset-2 disabled:opacity-50" />
+        <SliderPrimitive.Thumb aria-label={label ? `${label}, maximum` : 'Maximum'} className="block size-4 bg-papier border-2 border-encre rounded-full focus-visible:outline-2 focus-visible:outline-grenat focus-visible:outline-offset-2 disabled:opacity-50" />
       </SliderPrimitive.Root>
       {withInputs && (
         <div className="flex gap-2 mt-2">

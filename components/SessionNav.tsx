@@ -26,11 +26,11 @@ export function HeaderAccount() {
     <>
       <div className="hidden md:flex">
         {loading ? (
-          // Reserve the space of the sign-in button to avoid a layout shift
-          <div className="h-9 w-28 rounded-full bg-[#E9E7DB]/70" aria-hidden="true" />
+          // Reserve the space of the sign-in link to avoid a layout shift
+          <div className="h-9 w-24" aria-hidden="true" />
         ) : (
           <Suspense>
-            <AuthActions session={user} variant="bar" />
+            <AuthActions session={user} />
           </Suspense>
         )}
       </div>
@@ -39,19 +39,13 @@ export function HeaderAccount() {
   )
 }
 
-export function OrdersNavLink() {
-  const { user } = useSessionUser()
-  if (!user) return null
-  return <Link href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</Link>
-}
-
 export function FooterAccountLinks() {
   const { user } = useSessionUser()
   if (!user) return null
   return (
-    <nav className="flex items-center gap-4 sm:gap-6 text-sm text-[#8B7355]">
-      <Link href="/profile" className="hover:text-[#6B2D2D] transition-colors">Mon profil</Link>
-      <Link href="/orders" className="hover:text-[#6B2D2D] transition-colors">Mes commandes</Link>
-    </nav>
+    <ul className="space-y-2 pt-3 border-t border-sable/15">
+      <li><Link href="/profile" className="hover:text-white transition-colors">Mon profil</Link></li>
+      <li><Link href="/orders" className="hover:text-white transition-colors">Mes commandes</Link></li>
+    </ul>
   )
 }
