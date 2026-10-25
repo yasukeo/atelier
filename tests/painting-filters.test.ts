@@ -6,6 +6,10 @@ describe('parsePaintingFilters', () => {
     expect(parsePaintingFilters({ minPrice: '100', maxPrice: '900', kind: 'UNIQUE', sort: 'price-asc' }))
       .toEqual({ minPrice: 100, maxPrice: 900, kind: 'UNIQUE', sort: 'price-asc' })
   })
+  it('parses the orientation filter', () => {
+    expect(parsePaintingFilters({ orientation: 'CARRE' })).toEqual({ orientation: 'CARRE' })
+    expect(parsePaintingFilters({ orientation: 'ROND' })).toEqual({})
+  })
   it('ignores everything when a value is invalid', () => {
     expect(parsePaintingFilters({ sort: 'random' })).toEqual({})
     expect(parsePaintingFilters({ minPrice: '900', maxPrice: '100' })).toEqual({})

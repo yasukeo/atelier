@@ -8,15 +8,12 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   }, [error])
 
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center">
-      <h2 className="text-2xl font-semibold text-[#6B2D2D] mb-3">Une erreur est survenue</h2>
-      <p className="text-sm text-[#8B7355] mb-6 max-w-md">
-        Le serveur a rencontré un problème temporaire. Veuillez réessayer dans quelques instants.
+    <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-20 sm:pt-28 pb-28">
+      <h1 className="font-display text-5xl leading-[1.02] text-encre">La page n&apos;a pas pu s&apos;afficher.</h1>
+      <p className="mt-5 text-[16px] leading-relaxed text-encre/80 max-w-lg">
+        Le serveur a rencontré un problème temporaire. Réessayez dans quelques instants.
       </p>
-      <button
-        onClick={() => reset()}
-        className="rounded-full border border-[#D8D5C8] px-6 h-11 text-sm font-medium bg-[#6B2D2D] text-white hover:bg-[#5A2525] transition"
-      >
+      <button onClick={() => reset()} className="btn-primaire mt-10">
         Réessayer
       </button>
     </div>

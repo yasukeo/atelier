@@ -1,14 +1,12 @@
 import Link from "next/link";
-import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import type { Metadata } from 'next'
-import { t, tObj } from '@/lib/i18n'
-import HeroImagesCarousel from './HeroImagesCarousel.client'
 import { Suspense } from 'react'
+import PaintingCard from './paintings/painting-card'
 import { HomePaintingsSkeleton } from './paintings/skeletons'
 import { getLatestPaintings } from '@/lib/paintings'
-
-// Lazy import the painting card client component so the homepage server component stays light
-const PaintingCard = dynamic(() => import('./paintings/painting-card'))
+import { cloudinaryBlurUrl, formatDimensions, formatMAD } from '@/lib/format'
+import { Khatam } from '@/components/Khatam'
 
 export const metadata: Metadata = {
   title: "Elwarcha | الورشة - Galerie d'art marocain | Peintures & Tableaux",
@@ -52,113 +50,154 @@ const orgJsonLd = {
 // ISR: cache for 5 min; on revalidation failure Next.js keeps serving stale content
 export const revalidate = 300
 
-/* ─── Async data fetcher: streams in via Suspense ─── */
+const STEPS = [
+  { title: 'Vous passez commande', text: 'Choisissez une œuvre (et son format pour une re-création), puis indiquez votre adresse de livraison.' },
+  { title: "L'atelier confirme", text: 'Nous vérifions la disponibilité et vous contactons. Une avance peut être demandée pour une re-création.' },
+  { title: 'Réalisation et emballage', text: 'Les re-créations sont peintes à la main dans le délai indiqué. Chaque tableau part avec coins protégés et carton renforcé.' },
+  { title: 'Livraison', text: 'Partout au Maroc. Vous êtes informé par email à chaque étape de la commande.' },
+]
+
+/* Featured work beside the hero title: the most recent painting */
+async function HeroWork() {
+  const [work] = await getLatestPaintings()
+  const image = work?.images[0]
+  if (!work || !image) return null
+  const blur = cloudinaryBlurUrl(image.url)
+  return (
+    <figure className="group relative">
+      <p className="eyebrow text-sable/70 mb-4">Dernière œuvre arrivée</p>
+      <div className="relative aspect-[4/5] overflow-hidden bg-nuit-clair shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)]">
+        <Image
+          src={image.url}
+          alt={image.alt || work.title}
+          fill
+          priority
+          sizes="(max-width:1024px) 100vw, 40vw"
+          className="object-cover transition-transform duration-[1500ms] ease-out group-hover:scale-[1.02]"
+          {...(blur ? { placeholder: 'blur' as const, blurDataURL: blur } : {})}
+        />
+      </div>
+      <figcaption className="mt-4 flex items-baseline justify-between gap-4 text-sm">
+        <Link href={`/paintings/${work.id}`} className="font-display text-xl text-chaux after:absolute after:inset-0">
+          {work.title}
+        </Link>
+        <span className="tabular text-sable/70 whitespace-nowrap">
+          {formatDimensions(work.widthCm, work.heightCm)} · {formatMAD(work.priceMAD)}
+        </span>
+      </figcaption>
+    </figure>
+  )
+}
+
 async function FeaturedPaintings() {
   const paintings = await getLatestPaintings()
-
   if (paintings.length === 0) {
-    return <p className="text-sm text-[#8B7355]">{t('home.featured.none')}</p>
+    return <p className="text-pierre">Aucune œuvre en vente pour le moment. Revenez bientôt, ou écrivez-nous pour une commande sur mesure.</p>
   }
   return (
-    <div className="grid gap-4 sm:gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <div className="grid gap-x-5 gap-y-12 sm:gap-x-8 grid-cols-2 lg:grid-cols-4">
       {paintings.map((p, i) => (
-        <PaintingCard key={p.id} painting={p} priority={i < 4} />
+        <PaintingCard key={p.id} painting={p} priority={i < 2} />
       ))}
     </div>
   )
 }
 
-async function HeroSection() {
-  // Same cached query as FeaturedPaintings: only one DB round-trip per render
-  const paintings = await getLatestPaintings()
-
-  return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#E9E7DB] via-[#FDFCFA] to-[#E9E7DB] pointer-events-none" />
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 sm:pb-14 flex flex-col gap-8 lg:flex-row lg:items-center">
-        <div className="flex-1 max-w-2xl text-center lg:text-left">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#6B2D2D]">
-            {t('home.hero.title')}
-          </h1>
-          <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-[#8B7355] leading-relaxed">
-            {t('home.hero.description')}
-          </p>
-          <div className="mt-6 sm:mt-8">
-            <Link href="/paintings" className="inline-flex items-center justify-center rounded-full border border-[#D8D5C8] px-6 h-11 text-sm font-medium bg-[#6B2D2D] text-white hover:bg-[#5A2525] transition">
-              {t('home.hero.ctaGallery')}
-            </Link>
-            <p className="mt-3 text-xs text-[#8B7355]">{t('home.hero.prompt')}</p>
-          </div>
-        </div>
-        {paintings.length > 0 && (
-          <HeroImagesCarousel paintings={paintings} />
-        )}
-      </div>
-    </section>
-  )
-}
-
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }} />
-      {/* Hero */}
-      <Suspense fallback={
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#E9E7DB] via-[#FDFCFA] to-[#E9E7DB] pointer-events-none" />
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 sm:pb-14 flex flex-col gap-8 lg:flex-row lg:items-center">
-            <div className="flex-1 max-w-2xl text-center lg:text-left">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#6B2D2D]">
-                {t('home.hero.title')}
-              </h1>
-              <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg text-[#8B7355] leading-relaxed">
-                {t('home.hero.description')}
-              </p>
-              <div className="mt-6 sm:mt-8">
-                <Link href="/paintings" className="inline-flex items-center justify-center rounded-full border border-[#D8D5C8] px-6 h-11 text-sm font-medium bg-[#6B2D2D] text-white hover:bg-[#5A2525] transition">
-                  {t('home.hero.ctaGallery')}
-                </Link>
-                <p className="mt-3 text-xs text-[#8B7355]">{t('home.hero.prompt')}</p>
-              </div>
+
+      {/* Hero: the name of the atelier, in Arabic, is the thesis */}
+      <section className="bg-nuit text-sable">
+        <div className="max-w-[88rem] mx-auto px-5 sm:px-8 pt-12 pb-16 lg:pt-14 lg:pb-20 grid gap-14 lg:grid-cols-12 lg:gap-10 items-end">
+          <div className="lg:col-span-7">
+            <p className="eyebrow text-sable/70">Galerie en ligne · Peintures originales</p>
+            <h1 className="mt-6">
+              <span className="sr-only">Elwarcha — </span>
+              <span lang="ar" dir="rtl" className="block font-arabic font-bold text-[clamp(6.5rem,17vw,15rem)] leading-[0.85] text-sable text-left">الورشة</span>
+              <span className="block mt-6 font-display text-[clamp(2.25rem,4.6vw,4.25rem)] leading-[1.04] text-chaux max-w-[16ch] text-balance">
+                Des tableaux peints à la main, pour vos murs.
+              </span>
+            </h1>
+            <p className="mt-7 max-w-md text-[15px] leading-relaxed text-sable/75">
+              Elwarcha veut dire « l&apos;atelier » en arabe. Pièces uniques et re‑créations sur commande, peintes au Maroc et livrées partout dans le pays.
+            </p>
+            <div className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-4">
+              <Link href="/paintings" className="btn-clair">Voir les œuvres</Link>
+              <Link href="#commande" className="text-sm text-sable/80 underline decoration-sable/30 underline-offset-4 hover:text-white hover:decoration-white transition-colors">
+                Comment commander
+              </Link>
             </div>
-            <div className="flex-1 max-w-md aspect-[4/5] bg-[#E5E2D8] rounded-xl animate-pulse" />
           </div>
-        </section>
-      }>
-        <HeroSection />
-      </Suspense>
-
-      {/* Featured paintings */}
-      <section className="py-10 sm:py-14 border-t border-[#DCD9CC] bg-[#F7F5F0]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between mb-6 sm:mb-8 flex-wrap gap-4">
-            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#2D2A26]">{t('home.featured.title')}</h2>
-            <Link href="/paintings" className="text-sm text-[#8B7355] hover:text-[#6B2D2D] hover:underline">{t('home.featured.all')}</Link>
+          <div className="lg:col-span-5 lg:pl-6">
+            <Suspense fallback={<div className="aspect-[4/5] bg-nuit-clair animate-pulse" />}>
+              <HeroWork />
+            </Suspense>
           </div>
-          <Suspense fallback={<HomePaintingsSkeleton />}>
-            <FeaturedPaintings />
-          </Suspense>
         </div>
       </section>
 
-      {/* Value proposition / process */}
-      <section className="py-12 sm:py-20 bg-[#E9E7DB] border-t border-[#D8D5C8]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 grid gap-8 sm:gap-10 md:grid-cols-3">
-          {(['quality','customization','trust'] as const).map(key => {
-            const base = tObj<{ kicker: string; title: string; text: string }>(`home.process.blocks.${key}`)
-            if (!base) return null
-            return (
-              <div key={key} className="space-y-2 sm:space-y-3 text-center md:text-left">
-                <div className="text-[#D97706] text-xs sm:text-sm font-medium tracking-wide uppercase">{base.kicker}</div>
-                <h3 className="text-base sm:text-lg font-semibold leading-snug text-[#2D2A26]">{base.title}</h3>
-                <p className="text-xs sm:text-sm text-[#8B7355] leading-relaxed">{base.text}</p>
-              </div>
-            )
-          })}
+      {/* Available works */}
+      <section className="max-w-[88rem] mx-auto w-full px-5 sm:px-8 py-20 lg:py-28">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 mb-12">
+          <div>
+            <p className="eyebrow">La galerie</p>
+            <h2 className="mt-3 font-display text-4xl sm:text-5xl text-encre">Œuvres disponibles</h2>
+          </div>
+          <Link href="/paintings" className="lien text-sm whitespace-nowrap">Toute la galerie →</Link>
+        </div>
+        <Suspense fallback={<HomePaintingsSkeleton />}>
+          <FeaturedPaintings />
+        </Suspense>
+      </section>
+
+      {/* The two ways to buy, explained once so the cards can stay short */}
+      <section aria-labelledby="deux-facons" className="border-y border-trait bg-papier">
+        <div className="max-w-[88rem] mx-auto px-5 sm:px-8 py-20 lg:py-24 grid gap-14 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <p className="eyebrow">Acheter une œuvre</p>
+            <h2 id="deux-facons" className="mt-3 font-display text-4xl text-encre leading-tight">Deux façons de l&apos;accrocher chez vous</h2>
+          </div>
+          <div className="lg:col-span-8 grid gap-10 sm:grid-cols-2 sm:gap-12">
+            <div className="space-y-4">
+              <Khatam className="size-9 text-grenat" />
+              <h3 className="font-display text-2xl text-encre">Pièce unique</h3>
+              <p className="text-[15px] leading-relaxed text-encre/80">
+                L&apos;original, peint à la main. Il n&apos;en existe qu&apos;un : une fois vendu, il quitte la galerie. Le sceau de l&apos;atelier le signale sur chaque œuvre.
+              </p>
+              <Link href="/paintings?kind=UNIQUE" className="lien text-sm inline-block">Voir les pièces uniques</Link>
+            </div>
+            <div className="space-y-4">
+              <span aria-hidden="true" className="block font-display text-4xl leading-9 text-grenat">↻</span>
+              <h3 className="font-display text-2xl text-encre">Re-création</h3>
+              <p className="text-[15px] leading-relaxed text-encre/80">
+                L&apos;atelier repeint l&apos;œuvre à la main d&apos;après l&apos;original, dans le format de votre choix. Le délai de réalisation est indiqué sur chaque œuvre.
+              </p>
+              <Link href="/paintings?kind=RECREATABLE" className="lien text-sm inline-block">Voir les re-créations</Link>
+            </div>
+          </div>
         </div>
       </section>
-    </div>
+
+      {/* Order process: a real sequence, hence the numbers */}
+      <section id="commande" aria-labelledby="commande-titre" className="max-w-[88rem] mx-auto w-full px-5 sm:px-8 py-20 lg:py-28 scroll-mt-20">
+        <p className="eyebrow">Commander</p>
+        <h2 id="commande-titre" className="mt-3 font-display text-4xl sm:text-5xl text-encre">Comment se passe une commande</h2>
+        <ol className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+          {STEPS.map((s, i) => (
+            <li key={s.title} className="border-t border-encre pt-6">
+              <span className="font-display text-5xl leading-none text-grenat tabular">{i + 1}</span>
+              <h3 className="mt-5 text-[17px] font-semibold text-encre">{s.title}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-encre/75">{s.text}</p>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-14 text-sm text-pierre">
+          Une question avant de commander ? <Link href="/contact" className="lien">Écrivez à l&apos;atelier</Link>.
+        </p>
+      </section>
+    </>
   )
 }
-// processBlocks now sourced from i18n dictionary

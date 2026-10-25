@@ -16,6 +16,7 @@ export const paintingFilterSchema = z.object({
   minHeight: z.coerce.number().int().min(1).max(1000).optional(),
   maxHeight: z.coerce.number().int().min(1).max(1000).optional(),
   kind: z.enum(['UNIQUE','RECREATABLE']).optional(),
+  orientation: z.enum(['PORTRAIT','PAYSAGE','CARRE']).optional(),
   sort: z.enum(PAINTING_SORTS).optional(),
   // Future color palette filter placeholder
   colors: z.string().optional(),

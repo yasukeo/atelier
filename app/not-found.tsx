@@ -2,19 +2,15 @@ import Link from 'next/link'
 
 export default function NotFound() {
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center">
-      <p className="text-sm font-medium uppercase tracking-wide text-[#D97706] mb-2">Erreur 404</p>
-      <h1 className="text-2xl sm:text-3xl font-semibold text-[#6B2D2D] mb-3">Page introuvable</h1>
-      <p className="text-sm text-[#8B7355] mb-6 max-w-md">
-        Cette page n&apos;existe pas ou l&apos;œuvre a été retirée de la galerie.
+    <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-20 sm:pt-28 pb-28">
+      <p className="eyebrow">Erreur 404</p>
+      <h1 className="mt-3 font-display text-5xl sm:text-6xl leading-[1.02] text-encre">Cette page n&apos;est plus accrochée.</h1>
+      <p className="mt-5 text-[16px] leading-relaxed text-encre/80 max-w-lg">
+        L&apos;adresse est peut-être erronée, ou l&apos;œuvre a été retirée de la galerie.
       </p>
-      <div className="flex flex-wrap gap-3 justify-center">
-        <Link href="/paintings" className="inline-flex items-center justify-center rounded-full px-6 h-11 text-sm font-medium bg-[#6B2D2D] text-white hover:bg-[#5A2525] transition">
-          Voir la galerie
-        </Link>
-        <Link href="/" className="inline-flex items-center justify-center rounded-full px-6 h-11 text-sm font-medium border border-[#D8D5C8] text-[#6B2D2D] hover:bg-[#E9E7DB] transition">
-          Accueil
-        </Link>
+      <div className="mt-10 flex flex-wrap gap-3">
+        <Link href="/paintings" className="btn-primaire">Voir la galerie</Link>
+        <Link href="/" className="btn-secondaire">Accueil</Link>
       </div>
     </div>
   )

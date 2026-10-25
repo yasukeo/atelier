@@ -8,7 +8,7 @@ import { prisma } from '@/lib/db'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Paiement',
+  title: 'Commande',
   description: 'Finalisez votre commande Elwarcha.',
   robots: { index: false, follow: false },
 }

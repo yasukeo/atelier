@@ -34,7 +34,7 @@ export function Lightbox({ images, startIndex, caption, onClose }: {
   if (!current) return null
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center" onClick={onClose} role="dialog" aria-modal="true" aria-label={caption}>
+    <div className="fixed inset-0 z-[100] bg-nuit/95 flex items-center justify-center" onClick={onClose} role="dialog" aria-modal="true" aria-label={caption}>
       <div className="relative w-full h-full max-w-5xl max-h-[90vh] m-4 flex items-center justify-center" onClick={e => e.stopPropagation()}>
         <button
           onClick={onClose}

@@ -2,8 +2,6 @@
 
 import { useState, useTransition } from 'react'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { updateProfile, changePassword } from './actions'
 import Link from 'next/link'
@@ -70,141 +68,55 @@ export default function ProfileClient({ user }: ProfileClientProps) {
     })
   }
 
+  const label = 'block text-[13px] font-medium text-encre mb-2'
+
   return (
-    <div className="min-h-screen bg-[#F7F5F0]">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#6B2D2D]">Mon profil</h1>
-          <p className="text-sm text-[#8B7355] mt-1">Gérez vos informations personnelles</p>
-        </div>
+    <div className="max-w-5xl mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-24">
+      <h1 className="font-display text-5xl sm:text-6xl leading-none text-encre">Mon profil</h1>
+      <dl className="mt-8 flex flex-wrap gap-x-12 gap-y-4 text-[15px]">
+        <div><dt className="eyebrow">Commandes</dt><dd className="mt-1 font-display text-3xl tabular"><Link href="/orders" className="hover:text-grenat">{user.ordersCount}</Link></dd></div>
+        <div><dt className="eyebrow">Membre depuis</dt><dd className="mt-1 font-display text-3xl">{memberSince}</dd></div>
+      </dl>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-white border border-[#D8D5C8] rounded-lg p-4 text-center">
-            <p className="text-2xl font-semibold text-[#6B2D2D]">{user.ordersCount}</p>
-            <p className="text-xs text-[#8B7355]">Commandes</p>
-          </div>
-          <div className="bg-white border border-[#D8D5C8] rounded-lg p-4 text-center">
-            <p className="text-sm font-medium text-[#6B2D2D]">{memberSince}</p>
-            <p className="text-xs text-[#8B7355]">Membre depuis</p>
-          </div>
-        </div>
+      <div className="mt-14 grid gap-14 lg:grid-cols-2 lg:gap-16">
+        <section aria-labelledby="infos" className="border-t-2 border-encre pt-6">
+          <h2 id="infos" className="font-display text-2xl text-encre">Informations</h2>
+          <form onSubmit={handleUpdateProfile} className="mt-6 space-y-6">
+            <div>
+              <label htmlFor="profile-email" className={label}>Email</label>
+              <Input id="profile-email" type="email" value={user.email} disabled aria-describedby="profile-email-hint" className="bg-voile text-pierre" />
+              <p id="profile-email-hint" className="mt-1.5 text-[13px] text-pierre">L&apos;email du compte ne peut pas être modifié.</p>
+            </div>
+            <div>
+              <label htmlFor="profile-name" className={label}>Nom complet</label>
+              <Input id="profile-name" autoComplete="name" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <button type="submit" disabled={isUpdating} className="btn-primaire">
+              {isUpdating ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </form>
+        </section>
 
-        {/* Profile Info */}
-        <Card className="mb-6 border-[#D8D5C8] bg-white shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-[#2D2A26]">Informations personnelles</CardTitle>
-            <CardDescription className="text-[#8B7355]">Mettez à jour vos coordonnées</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
-              <div>
-                <label htmlFor="profile-email" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Email</label>
-                <Input 
-                  id="profile-email"
-                  type="email" 
-                  value={user.email} 
-                  disabled 
-                  className="h-11 bg-[#F7F5F0] border-[#D8D5C8] text-[#8B7355]"
-                />
-                <p className="text-xs text-[#8B7355] mt-1">L'email ne peut pas être modifié</p>
-              </div>
-              <div>
-                <label htmlFor="profile-name" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Nom complet</label>
-                <Input 
-                  id="profile-name"
-                  autoComplete="name"
-                  maxLength={80}
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Votre nom"
-                  className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]"
-                />
-              </div>
-              <Button 
-                type="submit" 
-                disabled={isUpdating}
-                className="w-full sm:w-auto h-11 bg-[#6B2D2D] hover:bg-[#5A2525] text-white"
-              >
-                {isUpdating ? 'Mise à jour...' : 'Enregistrer les modifications'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Change Password */}
-        <Card className="mb-6 border-[#D8D5C8] bg-white shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-[#2D2A26]">Changer le mot de passe</CardTitle>
-            <CardDescription className="text-[#8B7355]">Sécurisez votre compte</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div>
-                <label htmlFor="current-password" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Mot de passe actuel</label>
-                <Input 
-                  id="current-password"
-                  type="password" 
-                  autoComplete="current-password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                  className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]"
-                />
-              </div>
-              <div>
-                <label htmlFor="new-password" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Nouveau mot de passe</label>
-                <Input 
-                  id="new-password"
-                  type="password" 
-                  autoComplete="new-password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]"
-                />
-              </div>
-              <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Confirmer le nouveau mot de passe</label>
-                <Input 
-                  id="confirm-password"
-                  type="password" 
-                  autoComplete="new-password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]"
-                />
-              </div>
-              <Button 
-                type="submit" 
-                disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
-                variant="outline"
-                className="w-full sm:w-auto h-11 border-[#D8D5C8] text-[#6B2D2D] hover:bg-[#E9E7DB]"
-              >
-                {isChangingPassword ? 'Modification...' : 'Changer le mot de passe'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Quick Links */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Link 
-            href="/orders"
-            className="inline-flex items-center justify-center h-11 px-6 rounded-lg border border-[#D8D5C8] bg-white text-sm font-medium text-[#6B2D2D] hover:bg-[#E9E7DB] transition-colors"
-          >
-            Voir mes commandes
-          </Link>
-          <Link 
-            href="/paintings"
-            className="inline-flex items-center justify-center h-11 px-6 rounded-lg bg-[#6B2D2D] text-sm font-medium text-white hover:bg-[#5A2525] transition-colors"
-          >
-            Continuer les achats
-          </Link>
-        </div>
+        <section aria-labelledby="mdp" className="border-t-2 border-encre pt-6">
+          <h2 id="mdp" className="font-display text-2xl text-encre">Mot de passe</h2>
+          <form onSubmit={handleChangePassword} className="mt-6 space-y-6">
+            <div>
+              <label htmlFor="current-password" className={label}>Mot de passe actuel</label>
+              <Input id="current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+            </div>
+            <div>
+              <label htmlFor="new-password" className={label}>Nouveau mot de passe <span className="font-normal text-pierre">(6 caractères minimum)</span></label>
+              <Input id="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={6} maxLength={100} />
+            </div>
+            <div>
+              <label htmlFor="confirm-password" className={label}>Confirmer le nouveau mot de passe</label>
+              <Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} maxLength={100} />
+            </div>
+            <button type="submit" disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword} className="btn-secondaire">
+              {isChangingPassword ? 'Modification…' : 'Changer le mot de passe'}
+            </button>
+          </form>
+        </section>
       </div>
     </div>
   )
