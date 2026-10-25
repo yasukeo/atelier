@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 // Relations needed to render a <PaintingCard>
 export const paintingCardInclude = {
   artist: true,
+  technique: { select: { name: true } },
   images: { orderBy: { position: 'asc' } },
   recreationOptions: { select: { priceMAD: true } },
 } satisfies Prisma.PaintingInclude

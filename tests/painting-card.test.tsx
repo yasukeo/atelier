@@ -32,23 +32,24 @@ const base = {
 }
 
 describe('PaintingCard', () => {
-  it('links to the painting detail page', () => {
+  it('is a single link to the painting detail page', () => {
     render(<PaintingCard painting={{ ...base, kind: 'UNIQUE' }} />)
-    const links = screen.getAllByRole('link')
-    expect(links.length).toBeGreaterThan(0)
-    expect(links.every(l => l.getAttribute('href') === `/paintings/${base.id}`)).toBe(true)
-    expect(screen.getByRole('button', { name: 'Réserver' })).toBeEnabled()
+    const link = screen.getByRole('link', { name: base.title })
+    expect(link).toHaveAttribute('href', `/paintings/${base.id}`)
+    expect(screen.getAllByRole('link')).toHaveLength(1)
+    expect(screen.getByText('Pièce unique')).toBeInTheDocument()
+    expect(screen.getByText('70 × 50 cm')).toBeInTheDocument()
   })
 
-  it('shows sold originals as sold and not purchasable', () => {
+  it('marks sold originals as sold', () => {
     render(<PaintingCard painting={{ ...base, kind: 'UNIQUE', available: false }} />)
-    expect(screen.getByRole('button', { name: 'Vendu' })).toBeDisabled()
+    expect(screen.getByText('Vendue')).toBeInTheDocument()
   })
 
-  it('sends recreatable paintings to the format picker with their lowest price', () => {
+  it('shows the lowest price of recreatable paintings', () => {
     render(<PaintingCard painting={{ ...base, kind: 'RECREATABLE', recreationOptions: [{ priceMAD: 1200 }, { priceMAD: 2900 }] }} />)
-    expect(screen.getByRole('link', { name: 'Choisir un format' })).toHaveAttribute('href', `/paintings/${base.id}`)
-    expect(screen.getByText('dès')).toBeInTheDocument()
+    expect(screen.getByText('Re-création sur commande')).toBeInTheDocument()
+    expect(screen.getByText(/dès/)).toBeInTheDocument()
     expect(screen.getByText(/1.200/)).toBeInTheDocument()
   })
 })

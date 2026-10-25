@@ -33,6 +33,7 @@ async function PaintingResults({ searchParams }: { searchParams: Record<string,s
   if (filters.style) where.styleId = filters.style
   if (filters.technique) where.techniqueId = filters.technique
   if (filters.kind) where.kind = filters.kind
+  if (filters.orientation) where.orientation = filters.orientation
   if (filters.minPrice || filters.maxPrice) {
     where.priceMAD = {}
     if (filters.minPrice) where.priceMAD.gte = filters.minPrice
@@ -69,19 +70,20 @@ async function PaintingResults({ searchParams }: { searchParams: Record<string,s
   })
   if (paintings.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-[#D8D5C8] p-10 text-center space-y-3">
-        <p className="text-[#2D2A26] font-medium">Aucune œuvre ne correspond à ces filtres.</p>
-        <p className="text-sm text-[#8B7355]">Essayez d&apos;élargir la fourchette de prix ou de dimensions.</p>
-        <Link href="/paintings" className="inline-block text-sm text-[#6B2D2D] underline underline-offset-4">Réinitialiser les filtres</Link>
+      <div className="border border-dashed border-trait px-6 py-16 text-center">
+        <p className="font-display text-2xl text-encre">Aucune œuvre ne correspond à ces filtres.</p>
+        <p className="mt-3 text-sm text-pierre">Élargissez la fourchette de prix ou de dimensions, ou retirez un filtre.</p>
+        <Link href="/paintings" className="btn-secondaire mt-8">Voir toutes les œuvres</Link>
       </div>
     )
   }
   return (
     <>
-      <p className="text-xs text-[#8B7355] mb-3 sm:mb-4" aria-live="polite">
+      <h2 className="sr-only">Résultats</h2>
+      <p className="eyebrow mb-8" aria-live="polite">
         {paintings.length >= 60 ? '60+ œuvres' : `${paintings.length} œuvre${paintings.length > 1 ? 's' : ''}`}
       </p>
-      <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-x-5 gap-y-14 sm:gap-x-8 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {paintings.map((p, i) => (
           <PaintingCard key={p.id} painting={p} priority={i < 4} />
         ))}
@@ -103,29 +105,20 @@ async function FilterSidebar() {
 export default async function PaintingsGalleryPage({ searchParams }: { searchParams: Promise<Record<string,string|undefined>> }) {
   const resolvedParams = await searchParams
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 sm:py-10">
-      <div className="flex items-baseline justify-between mb-6 sm:mb-8 gap-4 flex-wrap">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#6B2D2D]">Galerie</h1>
-        <Link href="/" className="text-sm text-[#8B7355] hover:text-[#6B2D2D] hover:underline">Accueil</Link>
-      </div>
-      <div className="grid lg:grid-cols-[260px_1fr] gap-6 lg:gap-10 items-start">
-        <aside className="lg:sticky top-20 h-max border border-[#D8D5C8] rounded-md p-4 bg-[#F7F5F0]">
-          <Suspense fallback={
-            <div className="space-y-4 animate-pulse">
-              <div className="h-5 bg-[#E5E2D8] rounded w-20" />
-              <div className="h-9 bg-[#E5E2D8] rounded" />
-              <div className="h-5 bg-[#E5E2D8] rounded w-16" />
-              <div className="h-9 bg-[#E5E2D8] rounded" />
-            </div>
-          }>
-            <FilterSidebar />
-          </Suspense>
-        </aside>
-        <div>
-          <Suspense fallback={<PaintingGridSkeleton count={8} />}>
-            <PaintingResults searchParams={resolvedParams} />
-          </Suspense>
-        </div>
+    <div className="max-w-[88rem] mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-24">
+      <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4 pb-10">
+        <h1 className="font-display text-6xl sm:text-7xl leading-none text-encre">Galerie</h1>
+        <p className="text-[15px] leading-relaxed text-pierre max-w-md">
+          Peintures originales et re&#8209;créations, peintes à la main. Chaque fiche indique le format, le prix et le délai de réalisation.
+        </p>
+      </header>
+      <Suspense fallback={<div className="h-[73px] border-y border-trait" />}>
+        <FilterSidebar />
+      </Suspense>
+      <div className="pt-10">
+        <Suspense fallback={<PaintingGridSkeleton count={8} />}>
+          <PaintingResults searchParams={resolvedParams} />
+        </Suspense>
       </div>
     </div>
   )
