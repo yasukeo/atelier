@@ -4,13 +4,23 @@ import { placeOrderAction } from './actions.order'
 import { validateDiscountCode } from './actions'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import type { CartSummary } from '@/lib/cart'
-import { formatMAD } from '@/lib/format'
+import { formatDimensions, formatMAD } from '@/lib/format'
 
 interface CheckoutClientProps { initialSummary: CartSummary; initialDiscountCode?: string; defaultName?: string; defaultEmail?: string }
+
+function Field({ id, label, hint, error, children }: { id: string; label: string; hint?: string; error?: string[]; children: React.ReactNode }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-[13px] font-medium text-encre mb-2">
+        {label}{hint && <span className="font-normal text-pierre"> {hint}</span>}
+      </label>
+      {children}
+      {error && <p id={`${id}-error`} className="mt-1.5 text-[13px] text-destructive">{error[0]}</p>}
+    </div>
+  )
+}
 
 export default function CheckoutClient({ initialSummary, initialDiscountCode, defaultName, defaultEmail }: CheckoutClientProps) {
   const [summary, setSummary] = useState<CartSummary>(initialSummary)
@@ -38,170 +48,119 @@ export default function CheckoutClient({ initialSummary, initialDiscountCode, de
     }
   }
 
+  // Ties each field to its error message for screen readers
+  const a11y = (id: string, key: string) => ({
+    'aria-invalid': !!errors[key],
+    'aria-describedby': errors[key] ? `${id}-error` : undefined,
+  })
+
   return (
-    <div className="min-h-screen bg-[#F7F5F0]">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-          {/* Formulaire de livraison */}
-          <div className="order-2 lg:order-1">
-            <h1 className="text-xl sm:text-2xl font-semibold text-[#6B2D2D] mb-6">Informations de livraison</h1>
-            <form
-              action={async (formData: FormData) => {
-                // Inject discount code if valid
-                if (summary.discountPercent && discountCode) {
-                  formData.set('discountCode', discountCode.toUpperCase())
+    <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-24">
+      <p className="eyebrow">Commande</p>
+      <h1 className="mt-3 font-display text-5xl sm:text-6xl leading-none text-encre">Livraison</h1>
+      <div className="mt-12 grid gap-12 lg:gap-16 lg:grid-cols-[1fr_380px] items-start">
+        <form
+          action={async (formData: FormData) => {
+            // Inject discount code if valid
+            if (summary.discountPercent && discountCode) {
+              formData.set('discountCode', discountCode.toUpperCase())
+            }
+            setErrors({})
+            startPlacing(async () => {
+              const result = await placeOrderAction(formData)
+              if (!result.ok) {
+                if (result.error === 'VALIDATION' && result.fieldErrors) {
+                  setErrors(result.fieldErrors)
+                  toast.error('Vérifiez les champs signalés')
+                } else if (result.error === 'EMPTY_CART') {
+                  toast.error('Votre panier est vide')
+                  router.push('/cart')
+                } else if (result.error === 'UNAVAILABLE') {
+                  toast.error("Une œuvre de votre panier vient d'être vendue")
+                  router.push('/cart')
+                } else if (result.error === 'AUTH_REQUIRED') {
+                  router.push('/signin?callbackUrl=%2Fcheckout')
+                } else {
+                  toast.error("La commande n'a pas pu être enregistrée. Réessayez.")
                 }
-                setErrors({})
-                startPlacing(async () => {
-                  const result = await placeOrderAction(formData)
-                  if (!result.ok) {
-                    if (result.error === 'VALIDATION' && result.fieldErrors) {
-                      setErrors(result.fieldErrors)
-                      toast.error('Erreurs de validation')
-                    } else if (result.error === 'EMPTY_CART') {
-                      toast.error('Panier vide')
-                      router.push('/cart')
-                    } else if (result.error === 'UNAVAILABLE') {
-                      toast.error("Une œuvre de votre panier vient d'être vendue")
-                      router.push('/cart')
-                    } else if (result.error === 'AUTH_REQUIRED') {
-                      router.push('/signin?callbackUrl=%2Fcheckout')
-                    } else {
-                      toast.error('Erreur lors de la commande')
-                    }
-                  } else {
-                    toast.success('Commande créée')
-                    router.replace(`/order/success?id=${result.orderId}`)
-                  }
-                })
-              }}
-              className="space-y-5"
-            >
-              <div>
-                <label htmlFor="checkout-name" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Nom complet</label>
-                <Input id="checkout-name" name="name" autoComplete="name" defaultValue={defaultName} required minLength={2} className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
-                {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name[0]}</p>}
-              </div>
-              <div>
-                <label htmlFor="checkout-email" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Email</label>
-                <Input type="email" id="checkout-email" name="email" autoComplete="email" defaultValue={defaultEmail} required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
-                {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email[0]}</p>}
-              </div>
-              <div>
-                <label htmlFor="checkout-phone" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Téléphone</label>
-                <Input id="checkout-phone" name="phone" type="tel" autoComplete="tel" placeholder="06 12 34 56 78" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
-                {errors.phone && <p className="text-sm text-red-600 mt-1">{errors.phone[0]}</p>}
-              </div>
-              <div>
-                <label htmlFor="checkout-address" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Adresse</label>
-                <Input id="checkout-address" name="address" autoComplete="street-address" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
-                {errors.address && <p className="text-sm text-red-600 mt-1">{errors.address[0]}</p>}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="checkout-city" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Ville</label>
-                  <Input id="checkout-city" name="city" autoComplete="address-level2" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
-                  {errors.city && <p className="text-sm text-red-600 mt-1">{errors.city[0]}</p>}
-                </div>
-                <div>
-                  <label htmlFor="checkout-postalCode" className="block text-sm font-medium text-[#2D2A26] mb-1.5">Code postal</label>
-                  <Input id="checkout-postalCode" name="postalCode" autoComplete="postal-code" inputMode="numeric" required className="h-11 border-[#D8D5C8] focus:border-[#6B2D2D] focus:ring-[#6B2D2D]" />
-                  {errors.postalCode && <p className="text-sm text-red-600 mt-1">{errors.postalCode[0]}</p>}
-                </div>
-              </div>
-              {/* Hidden discount field for server action alignment */}
-              <input type="hidden" name="discountCode" value={discountStatus === 'valid' ? discountCode.toUpperCase() : ''} />
-              
-              {/* Note sur les avances */}
-              <div className="bg-[#E9E7DB]/50 border border-[#D8D5C8] rounded-lg p-4 text-sm text-[#8B7355]">
-                <p className="flex items-start gap-2">
-                  <span className="text-[#6B2D2D] shrink-0">ℹ️</span>
-                  <span>
-                    Certaines œuvres, notamment les re-créations ou commandes personnalisées, peuvent nécessiter une avance avant le début de la réalisation. Vous serez contacté(e) pour convenir des modalités.
+              } else {
+                toast.success('Commande enregistrée')
+                router.replace(`/order/success?id=${result.orderId}`)
+              }
+            })
+          }}
+          className="order-2 lg:order-1 space-y-6 border-t border-trait pt-8"
+        >
+          <Field id="checkout-name" label="Nom complet" error={errors.name}>
+            <Input id="checkout-name" name="name" autoComplete="name" defaultValue={defaultName} required minLength={2} {...a11y('checkout-name', 'name')} />
+          </Field>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Field id="checkout-email" label="Email" error={errors.email}>
+              <Input type="email" id="checkout-email" name="email" autoComplete="email" defaultValue={defaultEmail} required {...a11y('checkout-email', 'email')} />
+            </Field>
+            <Field id="checkout-phone" label="Téléphone" hint="(pour la livraison)" error={errors.phone}>
+              <Input id="checkout-phone" name="phone" type="tel" autoComplete="tel" placeholder="06 12 34 56 78" required {...a11y('checkout-phone', 'phone')} />
+            </Field>
+          </div>
+          <Field id="checkout-address" label="Adresse" error={errors.address}>
+            <Input id="checkout-address" name="address" autoComplete="street-address" required {...a11y('checkout-address', 'address')} />
+          </Field>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Field id="checkout-city" label="Ville" error={errors.city}>
+              <Input id="checkout-city" name="city" autoComplete="address-level2" required {...a11y('checkout-city', 'city')} />
+            </Field>
+            <Field id="checkout-postalCode" label="Code postal" error={errors.postalCode}>
+              <Input id="checkout-postalCode" name="postalCode" autoComplete="postal-code" inputMode="numeric" required {...a11y('checkout-postalCode', 'postalCode')} />
+            </Field>
+          </div>
+          {/* Hidden discount field for server action alignment */}
+          <input type="hidden" name="discountCode" value={discountStatus === 'valid' ? discountCode.toUpperCase() : ''} />
+
+          <p className="border-l-2 border-safran bg-safran/5 px-4 py-3 text-[14px] leading-relaxed text-encre/85">
+            Certaines œuvres, notamment les re-créations, peuvent nécessiter une avance avant le début de la réalisation. L&apos;atelier vous contacte pour convenir des modalités.
+          </p>
+
+          <button disabled={isPlacing} className="btn-primaire w-full h-12 text-[15px]" type="submit">
+            {isPlacing ? 'Enregistrement…' : 'Confirmer la commande'}
+          </button>
+        </form>
+
+        <aside className="order-1 lg:order-2 lg:sticky lg:top-24 border-t-2 border-encre pt-6 space-y-6">
+          <h2 className="eyebrow">Votre commande</h2>
+          <ul className="space-y-3">
+            {summary.items.map(item => (
+              <li key={item.key} className="flex justify-between gap-4 text-[15px]">
+                <span className="min-w-0">
+                  <span className="block font-display text-lg leading-snug truncate">{item.title}</span>
+                  <span className="text-[13px] text-pierre tabular">
+                    {item.widthCm && item.heightCm ? formatDimensions(item.widthCm, item.heightCm) : null}
+                    {item.quantity > 1 ? ` · ${item.quantity} exemplaires` : ''}
                   </span>
-                </p>
-              </div>
-
-              <Button 
-                disabled={isPlacing} 
-                className="w-full h-12 text-base font-medium bg-[#6B2D2D] hover:bg-[#5A2525] text-white rounded-lg mt-2" 
-                type="submit"
-              >
-                {isPlacing ? 'Traitement...' : 'Passer la commande'}
-              </Button>
-            </form>
+                </span>
+                <span className="shrink-0 tabular">{formatMAD(item.lineTotalMAD)}</span>
+              </li>
+            ))}
+          </ul>
+          <dl className="space-y-3 border-t border-trait pt-4 text-[15px]">
+            <div className="flex justify-between"><dt className="text-pierre">Sous-total</dt><dd className="tabular">{formatMAD(summary.subtotalMAD)}</dd></div>
+            {summary.discountPercent && (
+              <div className="flex justify-between text-emerald-800"><dt>Réduction ({summary.discountPercent} %)</dt><dd className="tabular">−{formatMAD(summary.discountAmountMAD || 0)}</dd></div>
+            )}
+            <div className="flex justify-between"><dt className="text-pierre">Livraison</dt><dd>Gratuite</dd></div>
+            <div className="flex justify-between items-baseline border-t border-trait pt-4"><dt className="font-medium">Total</dt><dd className="font-display text-3xl tabular">{formatMAD(summary.totalMAD)}</dd></div>
+          </dl>
+          <div className="space-y-2">
+            <label htmlFor="checkout-discount" className="block text-[13px] font-medium text-encre">Code promo</label>
+            <div className="flex gap-2">
+              <Input id="checkout-discount" value={discountCode} onChange={e => setDiscountCode(e.target.value)} className="uppercase" />
+              <button type="button" disabled={!discountCode.trim() || discountStatus === 'checking'} onClick={applyDiscount} className="btn-secondaire h-10 px-4 shrink-0">
+                Appliquer
+              </button>
+            </div>
+            {discountStatus === 'valid' && <p className="text-[13px] text-emerald-800" role="status">Code appliqué</p>}
+            {discountStatus === 'invalid' && <p className="text-[13px] text-destructive" role="alert">Ce code n&apos;est pas valide ou a expiré.</p>}
           </div>
-
-          {/* Récapitulatif */}
-          <div className="order-1 lg:order-2">
-            <h2 className="text-xl sm:text-2xl font-semibold text-[#6B2D2D] mb-6">Récapitulatif</h2>
-            <Card className="mb-6 border-[#D8D5C8] bg-white shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base text-[#2D2A26]">Articles ({summary.items.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {summary.items.map(item => (
-                  <div key={item.key} className="flex justify-between text-sm gap-2">
-                    <span className="text-[#2D2A26] flex-1 min-w-0">
-                      <span className="block truncate">{item.title}</span>
-                      {item.widthCm && item.heightCm && (
-                        <span className="text-xs text-[#8B7355]">{item.widthCm}×{item.heightCm}cm × {item.quantity}</span>
-                      )}
-                    </span>
-                    <span className="font-medium text-[#6B2D2D] shrink-0">{formatMAD(item.lineTotalMAD)}</span>
-                  </div>
-                ))}
-                <div className="border-t border-[#E9E7DB] pt-3 mt-3 space-y-2">
-                  <div className="text-sm flex justify-between text-[#8B7355]">
-                    <span>Sous-total</span>
-                    <span>{formatMAD(summary.subtotalMAD)}</span>
-                  </div>
-                  {summary.discountPercent && (
-                    <div className="text-sm flex justify-between text-green-600">
-                      <span>Réduction ({summary.discountPercent}%)</span>
-                      <span>-{formatMAD(summary.discountAmountMAD || 0)}</span>
-                    </div>
-                  )}
-                  <div className="text-sm flex justify-between text-[#8B7355]">
-                    <span>Livraison</span>
-                    <span className="text-green-600">Gratuite</span>
-                  </div>
-                </div>
-                <div className="border-t border-[#D8D5C8] pt-3 font-semibold flex justify-between text-[#2D2A26]">
-                  <span>Total</span>
-                  <span className="text-lg text-[#6B2D2D]">{formatMAD(summary.totalMAD)}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-[#D8D5C8] bg-white shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base text-[#2D2A26]">Code promo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="CODE" 
-                    value={discountCode} 
-                    onChange={e => setDiscountCode(e.target.value)} 
-                    className="uppercase h-10 border-[#D8D5C8] flex-1" 
-                  />
-                  <Button 
-                    type="button" 
-                    variant="secondary" 
-                    disabled={!discountCode.trim() || discountStatus==='checking'} 
-                    onClick={applyDiscount}
-                    className="h-10 px-4 shrink-0"
-                  >
-                    Appliquer
-                  </Button>
-                </div>
-                {discountStatus === 'valid' && <p className="text-xs text-green-600 mt-2">✓ Code appliqué</p>}
-                {discountStatus === 'invalid' && <p className="text-xs text-red-600 mt-2">Code invalide</p>}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        </aside>
       </div>
     </div>
   )

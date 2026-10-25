@@ -1,10 +1,9 @@
 "use client"
 import { useSearchParams } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { resetPassword } from './actions'
 import { useTransition, Suspense } from 'react'
-import Image from 'next/image'
+import { AuthShell, Notice } from '@/components/AuthShell'
 import Link from 'next/link'
 
 export default function ResetPasswordPage() {
@@ -28,41 +27,12 @@ function ResetPasswordContent() {
   // Only known codes are shown, so a crafted link can't display arbitrary text
   const displayError = error ? (errorMessages[error] || 'Une erreur est survenue.') : null
 
-  // No token provided
-  if (!token && !error) {
+  // No token, or a token that can no longer be used: no form, only a way to get a new link
+  if ((!token && !error) || error === 'invalid-token' || error === 'expired' || error === 'used') {
     return (
-      <div className="min-h-screen bg-[#E9E7DB] flex items-center justify-center px-4 py-10">
-        <div className="relative w-full max-w-md">
-          <div className="bg-[#E9E7DB] border border-[#D8D5C8] rounded-xl shadow-lg p-8 text-center">
-            <Image src="/logos/Plan de travail 11.png" alt="Elwarcha" width={100} height={75} className="mx-auto mb-6" />
-            <h1 className="text-xl font-semibold text-[#6B2D2D] mb-4">Lien invalide</h1>
-            <p className="text-[#8B7355] mb-6">
-              Ce lien de réinitialisation est invalide ou a expiré.
-            </p>
-            <Link href="/forgot-password" className="text-[#6B2D2D] underline underline-offset-4">
-              Demander un nouveau lien
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Token expired or invalid error (no form)
-  if (error === 'invalid-token' || error === 'expired' || error === 'used') {
-    return (
-      <div className="min-h-screen bg-[#E9E7DB] flex items-center justify-center px-4 py-10">
-        <div className="relative w-full max-w-md">
-          <div className="bg-[#E9E7DB] border border-[#D8D5C8] rounded-xl shadow-lg p-8 text-center">
-            <Image src="/logos/Plan de travail 11.png" alt="Elwarcha" width={100} height={75} className="mx-auto mb-6" />
-            <h1 className="text-xl font-semibold text-[#6B2D2D] mb-4">Lien invalide</h1>
-            <p className="text-[#8B7355] mb-6">{displayError}</p>
-            <Link href="/forgot-password" className="text-[#6B2D2D] underline underline-offset-4">
-              Demander un nouveau lien
-            </Link>
-          </div>
-        </div>
-      </div>
+      <AuthShell title="Lien invalide" intro={displayError ?? 'Ce lien de réinitialisation est invalide ou a expiré.'}>
+        <Link href="/forgot-password" className="btn-primaire w-full h-12">Demander un nouveau lien</Link>
+      </AuthShell>
     )
   }
 
@@ -75,76 +45,25 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E9E7DB] flex items-center justify-center px-4 py-10">
-      <div className="relative w-full max-w-md">
-        <div className="bg-[#E9E7DB] border border-[#D8D5C8] rounded-xl shadow-lg p-8">
-          <div className="mb-6 text-center">
-            <Image src="/logos/Plan de travail 11.png" alt="Elwarcha" width={100} height={75} className="mx-auto mb-4" />
-            <h1 className="text-xl font-semibold text-[#6B2D2D]">Nouveau mot de passe</h1>
-            <p className="text-sm text-[#8B7355] mt-2">
-              Entrez votre nouveau mot de passe ci-dessous.
-            </p>
-          </div>
-
-          {displayError && (
-            <div className="mb-4 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded p-2">
-              {displayError}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input type="hidden" name="token" value={token || ''} />
-            
-            <div className="space-y-1">
-              <label htmlFor="password" className="text-xs font-medium text-[#2D2A26]">
-                Nouveau mot de passe
-              </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={6}
-                maxLength={100}
-                placeholder="Minimum 6 caractères"
-                className="bg-[#FDFCFA] border-[#DCD9CC]"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="confirmPassword" className="text-xs font-medium text-[#2D2A26]">
-                Confirmer le mot de passe
-              </label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={6}
-                maxLength={100}
-                placeholder="Répétez le mot de passe"
-                className="bg-[#FDFCFA] border-[#DCD9CC]"
-              />
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full bg-[#6B2D2D] hover:bg-[#5A2525]" 
-              disabled={pending}
-            >
-              {pending ? 'Modification...' : 'Changer le mot de passe'}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-xs text-[#8B7355]">
-            <Link href="/signin" className="text-[#6B2D2D] underline underline-offset-4">
-              Retour à la connexion
-            </Link>
-          </p>
+    <AuthShell title="Nouveau mot de passe" intro="Choisissez un mot de passe de 6 caractères minimum.">
+      {displayError && <Notice tone="error" className="mb-6">{displayError}</Notice>}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <input type="hidden" name="token" value={token || ''} />
+        <div>
+          <label htmlFor="password" className="block text-[13px] font-medium text-encre mb-2">Nouveau mot de passe</label>
+          <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={6} maxLength={100} />
         </div>
-      </div>
-    </div>
+        <div>
+          <label htmlFor="confirmPassword" className="block text-[13px] font-medium text-encre mb-2">Confirmer le mot de passe</label>
+          <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" required minLength={6} maxLength={100} />
+        </div>
+        <button type="submit" className="btn-primaire w-full h-12" disabled={pending}>
+          {pending ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
+        </button>
+      </form>
+      <p className="mt-8 text-sm">
+        <Link href="/signin" className="lien">Retour à la connexion</Link>
+      </p>
+    </AuthShell>
   )
 }

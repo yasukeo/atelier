@@ -4,7 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { formatMAD } from '@/lib/format'
+import { formatDimensions, formatMAD } from '@/lib/format'
+import { Khatam } from '@/components/Khatam'
 
 export const metadata: Metadata = {
   title: 'Commande confirmée',
@@ -28,94 +29,55 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
   const subtotal = order.items.reduce((s, i) => s + i.unitPriceMAD * i.quantity, 0)
   const discountAmount = Math.max(0, subtotal + order.shippingFeeMAD - order.totalMAD)
 
+  const NEXT_STEPS = [
+    "L'atelier vérifie la commande et vous contacte, par téléphone ou par email.",
+    'Une avance peut être demandée pour une re-création avant le début de la réalisation.',
+    "Vous recevez un email à chaque étape, jusqu'à la livraison.",
+  ]
+
   return (
-    <div className="min-h-screen bg-[#F7F5F0]">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* Success Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#6B2D2D] mb-2">Commande réussie</h1>
-          <p className="text-sm sm:text-base text-[#8B7355]">
-            Merci pour votre achat !
-          </p>
-          <p className="text-xs text-[#8B7355] mt-1">
-            Référence: <span className="font-mono bg-[#E9E7DB] px-2 py-0.5 rounded">#{order.id.slice(-8).toUpperCase()}</span>
-          </p>
-        </div>
+    <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-14 sm:pt-20 pb-24">
+      <Khatam className="size-12 text-grenat" />
+      <p className="mt-8 eyebrow">Commande n° {order.id.slice(-8).toUpperCase()}</p>
+      <h1 className="mt-3 font-display text-5xl sm:text-6xl leading-[1.02] text-encre">Merci, votre commande est enregistrée.</h1>
+      <p className="mt-5 text-[15px] leading-relaxed text-encre/80 max-w-xl">
+        Un email de confirmation vient de vous être envoyé. Voici la suite :
+      </p>
+      <ol className="mt-6 space-y-3 text-[15px] leading-relaxed text-encre/85">
+        {NEXT_STEPS.map((step, i) => (
+          <li key={step} className="flex gap-4"><span className="font-display text-xl leading-6 text-grenat tabular">{i + 1}</span><span>{step}</span></li>
+        ))}
+      </ol>
 
-        {/* Order Details Card */}
-        <div className="bg-white border border-[#D8D5C8] rounded-lg shadow-sm overflow-hidden">
-          {/* Articles */}
-          <div className="p-4 sm:p-6">
-            <h2 className="text-lg font-medium text-[#2D2A26] mb-4">Articles</h2>
-            <div className="space-y-3">
-              {order.items.map(it => (
-                <div key={it.id} className="flex justify-between items-start gap-3 text-sm">
-                  <div className="flex-1 min-w-0">
-                    <Link href={`/paintings/${it.paintingId}`} className="block text-[#2D2A26] font-medium truncate hover:text-[#6B2D2D]">{it.painting.title}</Link>
-                    <p className="text-xs text-[#8B7355]">
-                      {it.widthCm && it.heightCm ? `${it.widthCm}×${it.heightCm}cm · ` : ''}
-                      Qté: {it.quantity}
-                    </p>
-                  </div>
-                  <span className="text-[#6B2D2D] font-medium shrink-0">{formatMAD(it.unitPriceMAD * it.quantity)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Summary */}
-          <div className="border-t border-[#E9E7DB] bg-[#FDFCFA] p-4 sm:p-6 space-y-2">
-            <div className="flex justify-between text-sm text-[#8B7355]">
-              <span>Sous-total</span>
-              <span>{formatMAD(subtotal)}</span>
-            </div>
-            {discountPercent && (
-              <div className="flex justify-between text-sm text-green-600">
-                <span>Réduction ({discountPercent}%)</span>
-                <span>-{formatMAD(discountAmount)}</span>
+      <section className="mt-14 border-t-2 border-encre pt-6" aria-labelledby="recap">
+        <h2 id="recap" className="eyebrow">Récapitulatif</h2>
+        <ul className="mt-4 divide-y divide-trait border-b border-trait">
+          {order.items.map(it => (
+            <li key={it.id} className="flex justify-between items-start gap-4 py-4 text-[15px]">
+              <div className="min-w-0">
+                <Link href={`/paintings/${it.paintingId}`} className="block font-display text-lg leading-snug text-encre truncate hover:text-grenat">{it.painting.title}</Link>
+                <p className="text-[13px] text-pierre tabular">
+                  {it.widthCm && it.heightCm ? formatDimensions(it.widthCm, it.heightCm) : ''}
+                  {it.quantity > 1 ? ` · ${it.quantity} exemplaires` : ''}
+                </p>
               </div>
-            )}
-            <div className="flex justify-between text-sm text-[#8B7355]">
-              <span>Livraison</span>
-              <span className="text-green-600">Gratuite</span>
-            </div>
-            <div className="flex justify-between font-semibold text-[#2D2A26] border-t border-[#D8D5C8] pt-3 mt-3">
-              <span>Total</span>
-              <span className="text-lg text-[#6B2D2D]">{formatMAD(order.totalMAD)}</span>
-            </div>
-          </div>
-        </div>
+              <span className="shrink-0 tabular">{formatMAD(it.unitPriceMAD * it.quantity)}</span>
+            </li>
+          ))}
+        </ul>
+        <dl className="mt-4 space-y-2 text-[15px]">
+          <div className="flex justify-between"><dt className="text-pierre">Sous-total</dt><dd className="tabular">{formatMAD(subtotal)}</dd></div>
+          {discountPercent && (
+            <div className="flex justify-between text-emerald-800"><dt>Réduction ({discountPercent} %)</dt><dd className="tabular">−{formatMAD(discountAmount)}</dd></div>
+          )}
+          <div className="flex justify-between"><dt className="text-pierre">Livraison</dt><dd>Gratuite</dd></div>
+          <div className="flex justify-between items-baseline border-t border-trait pt-3"><dt className="font-medium">Total</dt><dd className="font-display text-3xl tabular">{formatMAD(order.totalMAD)}</dd></div>
+        </dl>
+      </section>
 
-        {/* Actions */}
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <Link 
-            href="/orders" 
-            className="inline-flex items-center justify-center h-11 px-6 rounded-full border border-[#D8D5C8] bg-white text-sm font-medium text-[#6B2D2D] hover:bg-[#E9E7DB] transition-colors"
-          >
-            Voir mes commandes
-          </Link>
-          <Link 
-            href="/paintings" 
-            className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-[#6B2D2D] text-sm font-medium text-white hover:bg-[#5A2525] transition-colors"
-          >
-            Continuer les achats
-          </Link>
-        </div>
-
-        {/* Info Box */}
-        <div className="mt-8 p-4 bg-[#E9E7DB] rounded-lg text-center">
-          <p className="text-sm text-[#8B7355]">
-            📧 Un email de confirmation a été envoyé à votre adresse.
-          </p>
-          <p className="text-xs text-[#8B7355] mt-1">
-            Vous recevrez des mises à jour sur le statut de votre commande.
-          </p>
-        </div>
+      <div className="mt-12 flex flex-wrap gap-3">
+        <Link href="/orders" className="btn-primaire">Suivre ma commande</Link>
+        <Link href="/paintings" className="btn-secondaire">Retour à la galerie</Link>
       </div>
     </div>
   )

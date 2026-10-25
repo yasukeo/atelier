@@ -16,6 +16,15 @@ Modern e-commerce storefront for curated art pieces, built on the Next.js App Ro
 - **Vercel** for hosting
 - Vitest + Testing Library for unit/component tests, Playwright for e2e
 
+## Design system
+
+Colours and fonts live in `app/globals.css` (Tailwind v4 `@theme`) and `app/layout.tsx`:
+
+- **Palette**, from the khatam star logo and the paintings: `chaux` (page ground), `papier`, `voile`, `trait` (hairlines), `pierre` (secondary text), `encre` (text), `grenat` (brand and actions), `safran` (small accents only), `nuit` (indigo hero and footer), `sable` (text on `nuit`). Use them as Tailwind classes (`bg-nuit`, `text-grenat`…), not raw hex values.
+- **Type**: Gloock for titles and painting names (`font-display`), Hanken Grotesk for text (`font-sans`), Aref Ruqaa for the Arabic wordmark الورشة (`font-arabic`).
+- **Shared utilities**: `btn-primaire`, `btn-secondaire`, `btn-clair`, `lien`, `eyebrow`, `tabular`, and `texte-long` for the policy pages.
+- **Conventions**: paintings keep square corners like real canvases; the khatam seal (`components/Khatam.tsx`) only marks unique originals; `components/ScaleDrawing.tsx` draws a painting at scale above a 2 m sofa on the painting page.
+
 ## Repository layout
 
 - `app/` – routed features (storefront, admin dashboard, checkout, auth, API routes)
